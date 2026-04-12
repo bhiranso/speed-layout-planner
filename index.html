@@ -297,25 +297,27 @@ body.arrow-mode #arrow-canvas { pointer-events: all; cursor: crosshair; }
 
 /* ── Arrow toolbar (shown in arrow mode) ── */
 #arrow-toolbar {
-  position: absolute; top: 100px; left: 50%; transform: translateX(-50%);
-  display: none; gap: 6px; align-items: center;
-  background: var(--glass); padding: 5px 8px;
-  border-radius: var(--radius-pill); border: 1px solid rgba(255,255,255,0.1);
+  position: fixed; right: 10px; top: 50%; transform: translateY(-50%);
+  display: none; flex-direction: column; gap: 4px; align-items: stretch;
+  background: var(--glass); padding: 7px 6px;
+  border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);
   backdrop-filter: blur(24px) saturate(180%); z-index: 22;
   box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+  min-width: 44px;
 }
 body.arrow-mode #arrow-toolbar { display: flex; }
 .arrow-color-btn {
   width: 24px; height: 24px; border-radius: 50%; border: 2px solid transparent;
   cursor: pointer; transition: transform 0.1s, border-color 0.1s;
+  align-self: center;
 }
 .arrow-color-btn:hover { transform: scale(1.15); }
 .arrow-color-btn.on { border-color: #fff; }
 .arrow-size-btn {
-  padding: 3px 10px; background: transparent; border: none;
-  border-radius: var(--radius-pill); color: var(--text2);
-  font-family: var(--font); font-size: 12px; font-weight: 500;
+  padding: 5px 4px; background: transparent; border: none;
+  border-radius: 6px; color: var(--text2);
   cursor: pointer; transition: background 0.12s, color 0.12s;
+  display: flex; align-items: center; justify-content: center;
 }
 .arrow-size-btn:hover { background: rgba(255,255,255,0.08); color: var(--text); }
 .arrow-size-btn.on { background: var(--blue); color: #fff; }
@@ -407,10 +409,11 @@ body.walk-mode #fps-crosshair-dot { display: block; }
 
 /* ── Arrow type buttons ── */
 .arrow-type-btn {
-  padding: 3px 10px; background: transparent; border: none;
-  border-radius: var(--radius-pill); color: var(--text2);
-  font-family: var(--font); font-size: 12px; font-weight: 500;
+  padding: 5px 4px; background: transparent; border: none;
+  border-radius: 6px; color: var(--text2);
+  font-family: var(--font); font-size: 16px; font-weight: 500;
   cursor: pointer; transition: background 0.12s, color 0.12s;
+  text-align: center;
 }
 .arrow-type-btn:hover { background: rgba(255,255,255,0.08); color: var(--text); }
 .arrow-type-btn.on { background: var(--blue); color: #fff; }
@@ -747,23 +750,29 @@ button, label[style*="cursor:pointer"] { touch-action: manipulation; }
   <div id="fps-crosshair"></div>
   <div id="fps-crosshair-dot"></div>
 
-  <!-- Arrow mode sub-toolbar -->
+  <!-- Arrow mode sub-toolbar (vertical, right side) -->
   <div id="arrow-toolbar">
-    <button class="arrow-type-btn on" data-type="move">↗ Move</button>
-    <button class="arrow-type-btn" data-type="shoot">💥 Shot</button>
-    <div style="width:1px;height:16px;background:var(--separator);margin:0 2px"></div>
+    <button class="arrow-type-btn on" data-type="move" title="Movement arrow">↗</button>
+    <button class="arrow-type-btn" data-type="shoot" title="Shot arrow">💥</button>
+    <div style="height:1px;background:var(--separator);margin:2px 0"></div>
     <div class="arrow-color-btn on" data-color="#ff453a" style="background:#ff453a" title="Red"></div>
     <div class="arrow-color-btn" data-color="#0a84ff" style="background:#0a84ff" title="Blue"></div>
     <div class="arrow-color-btn" data-color="#ffd60a" style="background:#ffd60a" title="Yellow"></div>
     <div class="arrow-color-btn" data-color="#39ff14" style="background:#39ff14" title="Neon Green"></div>
     <div class="arrow-color-btn" data-color="#30d158" style="background:#30d158" title="Green"></div>
     <div class="arrow-color-btn" data-color="#ffffff" style="background:#ffffff" title="White"></div>
-    <div style="width:1px;height:16px;background:var(--separator);margin:0 2px"></div>
-    <button class="arrow-size-btn on" data-size="3">Thin</button>
-    <button class="arrow-size-btn" data-size="6">Medium</button>
-    <button class="arrow-size-btn" data-size="10">Thick</button>
-    <div style="width:1px;height:16px;background:var(--separator);margin:0 2px"></div>
-    <button class="tbtn danger" id="btn-clear-arrows" style="padding:4px 10px;font-size:12px">Clear Arrows</button>
+    <div style="height:1px;background:var(--separator);margin:2px 0"></div>
+    <button class="arrow-size-btn on" data-size="3" title="Thin">
+      <svg width="22" height="12" viewBox="0 0 22 12"><line x1="2" y1="6" x2="20" y2="6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+    </button>
+    <button class="arrow-size-btn" data-size="6" title="Medium">
+      <svg width="22" height="12" viewBox="0 0 22 12"><line x1="2" y1="6" x2="20" y2="6" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/></svg>
+    </button>
+    <button class="arrow-size-btn" data-size="10" title="Thick">
+      <svg width="22" height="12" viewBox="0 0 22 12"><line x1="2" y1="6" x2="20" y2="6" stroke="currentColor" stroke-width="6" stroke-linecap="round"/></svg>
+    </button>
+    <div style="height:1px;background:var(--separator);margin:2px 0"></div>
+    <button class="tbtn danger" id="btn-clear-arrows" style="padding:5px 4px;font-size:16px;line-height:1" title="Clear all arrows">✕</button>
   </div>
 
   <!-- ── Toolbar: two grouped rows ── -->
@@ -772,6 +781,7 @@ button, label[style*="cursor:pointer"] { touch-action: manipulation; }
     <div class="tb-row">
       <div class="tb-group">
         <button class="tbtn mode-btn on" id="btn-mode-select">Select</button>
+        <button class="tbtn" id="btn-multi-select" title="Toggle multi-select (tap to add/remove from selection)">Multi</button>
         <button class="tbtn mode-btn" id="btn-mode-player">Player</button>
         <button class="tbtn mode-btn" id="btn-mode-arrow">Arrow</button>
       </div>
@@ -845,6 +855,17 @@ button, label[style*="cursor:pointer"] { touch-action: manipulation; }
       <div class="ctx-item" id="ctx-stance-stand">▲ Standing</div>
       <div class="ctx-item" id="ctx-stance-crouch">◆ Crouching</div>
       <div class="ctx-item" id="ctx-stance-crawl">▬ Crawling</div>
+    </div>
+    <div id="ctx-player-size-group" style="display:none">
+      <div class="ctx-sep"></div>
+      <div style="padding:5px 12px 2px">
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-bottom:3px"><span>Height</span><span id="ctx-height-val">100%</span></div>
+        <input type="range" id="ctx-height-slider" min="70" max="130" value="100" style="width:100%;accent-color:var(--blue)">
+      </div>
+      <div style="padding:2px 12px 6px">
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-bottom:3px"><span>Width</span><span id="ctx-width-val">100%</span></div>
+        <input type="range" id="ctx-width-slider" min="70" max="150" value="100" style="width:100%;accent-color:var(--blue)">
+      </div>
     </div>
     <div id="ctx-bunker-group" style="display:none">
       <div class="ctx-sep"></div>
@@ -978,7 +999,7 @@ button, label[style*="cursor:pointer"] { touch-action: manipulation; }
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-const LAST_UPDATED = 'Apr 12, 2026 · 10:29 AM';
+const LAST_UPDATED = 'Apr 12, 2026 · 3:34 PM';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // FIELD DEFINITIONS  (placeholder bunkers — real data coming later)
@@ -1017,6 +1038,25 @@ const FIELD_DEFS = {
       { id: 'snake',      label: 'Snake',      desc: 'Full S-shape',    color: '#6366f1', cat: 'Snakes' },
       { id: 'tck',        label: 'TCK',        desc: 'T-shape bunker',  color: '#f97316', cat: 'Complex' },
       { id: 'corner',     label: 'Corner',     desc: 'L-shape corner',  color: '#84cc16', cat: 'Complex' },
+    ]
+  },
+  adrenaline: {
+    label: 'Adrenaline Paintball',
+    width: 50, length: 100,   // ft — placeholder until measured
+    bunkers: [
+      { id: 'can',        label: 'Can',        desc: 'Medium cylinder', color: '#ff2d55', cat: 'Cylinders' },
+      { id: 'fatboy',     label: 'Fatboy',     desc: 'Large cylinder',  color: '#ff9500', cat: 'Cylinders' },
+      { id: 'cake',       label: 'Cake',       desc: 'Wide flat disk',  color: '#ffcc00', cat: 'Cylinders' },
+      { id: 'dorito',     label: 'Dorito',     desc: 'Triangle prism',  color: '#34c759', cat: 'Triangles' },
+      { id: 'mini_dorito',label: 'Mini Dorito',desc: 'Small triangle',  color: '#5ac8fa', cat: 'Triangles' },
+      { id: 'brick',      label: 'Brick',      desc: 'Wide low wall',   color: '#007aff', cat: 'Rectangles' },
+      { id: 'tombstone',  label: 'Tombstone',  desc: 'Tall thin wall',  color: '#af52de', cat: 'Rectangles' },
+      { id: 'sup_air',    label: "Sup'Air",    desc: 'Tall wide wall',  color: '#ff3b30', cat: 'Rectangles' },
+      { id: 'snake',      label: 'Snake',      desc: 'Full S-shape',    color: '#30d158', cat: 'Snakes' },
+      { id: 'mini_snake', label: 'Mini Snake', desc: 'Half S-shape',    color: '#64d2ff', cat: 'Snakes' },
+      { id: 'tck',        label: 'TCK',        desc: 'T-shape bunker',  color: '#ff6b00', cat: 'Complex' },
+      { id: 'corner',     label: 'Corner',     desc: 'L-shape corner',  color: '#ffd60a', cat: 'Complex' },
+      { id: 'x_bunker',   label: 'X-Bunker',  desc: 'Cross shape',     color: '#ff375f', cat: 'Complex' },
     ]
   }
 };
@@ -1331,18 +1371,21 @@ const SLOT_KEY = i => `speedlayout_slot_${i}`;
 
 // ── Playbook (players + arrows only) ─────────────────────────────────────────
 let activePlay = 0;
-let playCount  = Math.max(1, parseInt(localStorage.getItem('speedlayout_play_count') || '1'));
-const PLAY_KEY = i => `speedlayout_play_${i}`;
+function PLAY_KEY(i) { return `speedlayout_play_${activeFieldId}_${i}`; }
+function PLAY_COUNT_KEY() { return `speedlayout_play_count_${activeFieldId}`; }
+let playCount  = Math.max(1, parseInt(localStorage.getItem(PLAY_COUNT_KEY()) || '1'));
 
 function snapshotPlay() {
   return {
     players: players.map(g => ({
-      team:       g.userData.team,
-      weapon:     g.userData.weapon,
-      playerName: g.userData.playerName || '',
-      stance:     g.userData.stance || 'standing',
-      faceIndex:  g.userData.faceIndex ?? 0,
-      rotY:       g.rotation.y,
+      team:         g.userData.team,
+      weapon:       g.userData.weapon,
+      playerName:   g.userData.playerName || '',
+      stance:       g.userData.stance || 'standing',
+      faceIndex:    g.userData.faceIndex ?? 0,
+      playerHeight: g.userData.playerHeight ?? 1,
+      playerWidth:  g.userData.playerWidth  ?? 1,
+      rotY:         g.rotation.y,
       x: g.position.x, z: g.position.z,
     })),
     arrows: arrowStrokes.map(s => ({ ...s })),
@@ -1368,6 +1411,11 @@ function restorePlay(snap) {
     if (pg && p.playerName) { pg.userData.playerName = p.playerName; refreshPlayerSprite(pg); }
     if (pg && p.stance && p.stance !== 'standing') setPlayerStance(pg, p.stance, true);
     if (pg) pg.rotation.y = p.rotY ?? pg.rotation.y;
+    if (pg) {
+      pg.userData.playerHeight = p.playerHeight ?? 1;
+      pg.userData.playerWidth  = p.playerWidth  ?? 1;
+      applyPlayerScale(pg);
+    }
     playerTeam   = savedTeam;
     playerWeapon = savedWeapon;
   });
@@ -1401,8 +1449,14 @@ function loadPlay(i) {
 }
 
 function snapshotState() {
+  // Collect all play slot data from localStorage
+  const plays = {};
+  for (let i = 0; i < playCount; i++) {
+    const d = localStorage.getItem(PLAY_KEY(i));
+    if (d) { try { plays[i] = JSON.parse(d); } catch(e) {} }
+  }
   return {
-    version: 1,
+    version: 2,
     fieldId: activeFieldId,
     fieldW:  activeField().width,
     fieldL:  activeField().length,
@@ -1415,14 +1469,20 @@ function snapshotState() {
       scaleX: g.scale.x, scaleZ: g.scale.z,
     })),
     players: players.map(g => ({
-      team:       g.userData.team,
-      weapon:     g.userData.weapon,
-      playerName: g.userData.playerName || '',
-      stance:     g.userData.stance || 'standing',
-      faceIndex:  g.userData.faceIndex ?? 0,
-      rotY:       g.rotation.y,
+      team:        g.userData.team,
+      weapon:      g.userData.weapon,
+      playerName:  g.userData.playerName || '',
+      stance:      g.userData.stance || 'standing',
+      faceIndex:   g.userData.faceIndex ?? 0,
+      playerHeight: g.userData.playerHeight ?? 1,
+      playerWidth:  g.userData.playerWidth  ?? 1,
+      rotY:        g.rotation.y,
       x: g.position.x, z: g.position.z,
     })),
+    arrows:     arrowStrokes.map(s => ({ ...s })),
+    plays,
+    playCount,
+    activePlay,
   };
 }
 
@@ -1455,9 +1515,28 @@ function restoreState(snap) {
     if (pg && p.playerName) { pg.userData.playerName = p.playerName; refreshPlayerSprite(pg); }
     if (pg && p.stance && p.stance !== 'standing') setPlayerStance(pg, p.stance, true);
     if (pg && p.rotY) pg.rotation.y = p.rotY;
+    if (pg) {
+      pg.userData.playerHeight = p.playerHeight ?? 1;
+      pg.userData.playerWidth  = p.playerWidth  ?? 1;
+      applyPlayerScale(pg);
+    }
     playerTeam   = savedTeam;
     playerWeapon = savedWeapon;
   });
+  // Restore arrows
+  arrowStrokes = (snap.arrows || []).map(s => ({ ...s }));
+  redrawArrows();
+  // Restore play slots
+  if (snap.plays) {
+    Object.entries(snap.plays).forEach(([i, data]) => {
+      localStorage.setItem(PLAY_KEY(parseInt(i)), JSON.stringify(data));
+    });
+  }
+  if (snap.playCount != null) {
+    playCount = Math.max(1, snap.playCount);
+    localStorage.setItem(PLAY_COUNT_KEY(), playCount);
+  }
+  if (snap.activePlay != null) activePlay = snap.activePlay;
   deselect();
   refreshLabels();
   buildSidebar();
@@ -1613,7 +1692,9 @@ function roundRect(ctx, x, y, w, h, r) {
 
 function attachLabel(g) {
   detachLabel(g);
-  const sprite = makeLabelSprite(g.userData.bunker?.label || '?');
+  const label = g.userData.bunker?.label ?? '';
+  if (!label) return; // blank name = no label bar
+  const sprite = makeLabelSprite(label);
   sprite.position.set(0, 7, 0);
   g.add(sprite);
 }
@@ -1656,7 +1737,7 @@ function exportJSON() {
   const blob = new Blob([JSON.stringify(snap, null, 2)], { type: 'application/json' });
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
-  a.href = url; a.download = `layout_${Date.now()}.json`; a.click();
+  a.href = url; a.download = `speedlayout_${Date.now()}.json`; a.click();
   URL.revokeObjectURL(url);
 }
 
@@ -1694,7 +1775,7 @@ function buildSidebar() {
     <div id="sidebar-header">
       <div style="margin-bottom:10px">
         <div class="app-title" style="font-size:16px;font-weight:700;letter-spacing:-0.4px">Speedsoft Layout Planner</div>
-        <div style="font-size:10px;color:var(--text3);margin-top:2px;letter-spacing:0.1px">Created by <a href="https://www.instagram.com/bryan.paintball/" target="_blank" rel="noopener" style="color:var(--text2);text-decoration:none">@bryan.paintball</a></div>
+        <div style="font-size:10px;color:var(--text3);margin-top:2px;letter-spacing:0.1px">Maintained by <a href="https://www.instagram.com/bryan.paintball/" target="_blank" rel="noopener" style="color:var(--text2);text-decoration:none">@bryan.paintball</a></div>
         <div style="font-size:9.5px;color:var(--text3);margin-top:1px;letter-spacing:0.1px">Last updated: ${LAST_UPDATED}</div>
         <button id="btn-release-notes">📋 Release Notes &amp; Roadmap</button>
         <button id="btn-controls">🎮 Controls &amp; Tips</button>
@@ -1727,7 +1808,7 @@ function buildSidebar() {
       <!-- Playbook -->
       <div style="display:flex;align-items:center;justify-content:space-between;margin-top:12px">
         <div class="field-selector-label">📓 Playbook</div>
-        ${playCount < 8 ? `<button id="btn-add-play" title="Add play slot" style="width:26px;height:26px;display:flex;align-items:center;justify-content:center;background:var(--bg2);border:1px solid rgba(255,255,255,0.07);border-radius:50%;color:var(--text3);cursor:pointer;font-size:16px;line-height:1;flex-shrink:0;touch-action:manipulation">+</button>` : ''}
+        <button id="btn-add-play" title="Add play slot" style="width:26px;height:26px;display:flex;align-items:center;justify-content:center;background:var(--bg2);border:1px solid rgba(255,255,255,0.07);border-radius:50%;color:var(--text3);cursor:pointer;font-size:16px;line-height:1;flex-shrink:0;touch-action:manipulation">+</button>
       </div>
       <div style="font-size:9.5px;color:var(--text3);margin-bottom:4px">Saves players + arrows — bunkers stay fixed</div>
       <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">
@@ -1750,8 +1831,13 @@ function buildSidebar() {
   });
 
   document.getElementById('field-select').addEventListener('change', e => {
+    savePlay(activePlay);             // save current play under old field key
     saveFieldLayout(activeFieldId);   // persist current field before leaving
     activeFieldId = e.target.value;
+    // Reset playbook to this field's saved state
+    playCount = Math.max(1, parseInt(localStorage.getItem(PLAY_COUNT_KEY()) || '1'));
+    activePlay = 0;
+    arrowStrokes = []; redrawArrows();
     buildField();
     buildSidebar();
     [...placed, ...players].forEach(g => scene.remove(g));
@@ -1760,6 +1846,7 @@ function buildSidebar() {
     camera.position.set(0, FH * 0.5, FH * 0.65);
     controls.update();
     loadFieldLayout(activeFieldId);   // load saved or default
+    loadPlay(0);                      // load play 1 for new field
   });
 
   document.getElementById('btn-reset-field').addEventListener('click', () => {
@@ -1835,9 +1922,8 @@ function buildSidebar() {
 
   // Add play slot
   document.getElementById('btn-add-play')?.addEventListener('click', () => {
-    if (playCount >= 8) return;
     playCount++;
-    localStorage.setItem('speedlayout_play_count', playCount);
+    localStorage.setItem(PLAY_COUNT_KEY(), playCount);
     buildSidebar();
   });
   document.getElementById('btn-clear-play').addEventListener('click', () => {
@@ -1925,6 +2011,42 @@ const DEFAULT_LAYOUTS = {
     { type: 'can',       x:  17.5, z: -32.5,  rotY: 0,                        scaleX: 1, scaleZ: -1 },
     { type: 'fatboy',    x:  0,    z:  15,    rotY: 0,                        scaleX: 1, scaleZ:  1 },
     { type: 'fatboy',    x:  0,    z: -15,    rotY: 0,                        scaleX: 1, scaleZ: -1 },
+  ],
+
+  // NXL-style 5v5 paintball layout — 50×100 ft field
+  adrenaline: [
+    // Center — mini dorito pair facing off
+    { type: 'mini_dorito', x:  0,    z:  4,   rotY: 0 },
+    { type: 'mini_dorito', x:  0,    z: -4,   rotY: Math.PI },
+    // Home snakes — the signature low side bunkers
+    { type: 'snake',      x: -20,   z:  18,   rotY: 0 },
+    { type: 'snake',      x: -20,   z: -18,   rotY: 0 },
+    // Insert doritos — mid-field triangles
+    { type: 'dorito',     x: -8,    z:  24,   rotY: 0 },
+    { type: 'dorito',     x: -8,    z: -24,   rotY: 0 },
+    { type: 'dorito',     x:  8,    z:  24,   rotY: Math.PI },
+    { type: 'dorito',     x:  8,    z: -24,   rotY: Math.PI },
+    // TCKs — cross-field T-bunkers
+    { type: 'tck',        x:  5,    z:  10,   rotY: 0 },
+    { type: 'tck',        x:  5,    z: -10,   rotY: Math.PI },
+    // Mid cans
+    { type: 'can',        x:  18,   z:  10,   rotY: 0 },
+    { type: 'can',        x:  18,   z: -10,   rotY: 0 },
+    { type: 'fatboy',     x:  0,    z:  18,   rotY: 0 },
+    { type: 'fatboy',     x:  0,    z: -18,   rotY: 0 },
+    // Corner cans at spawn ends
+    { type: 'can',        x: -20,   z:  38,   rotY: 0 },
+    { type: 'can',        x: -20,   z: -38,   rotY: 0 },
+    { type: 'can',        x:  20,   z:  38,   rotY: 0 },
+    { type: 'can',        x:  20,   z: -38,   rotY: 0 },
+    // Sup'Air walls near spawn ends
+    { type: 'sup_air',    x: -12,   z:  42,   rotY: 0 },
+    { type: 'sup_air',    x: -12,   z: -42,   rotY: 0 },
+    { type: 'sup_air',    x:  12,   z:  42,   rotY: 0 },
+    { type: 'sup_air',    x:  12,   z: -42,   rotY: 0 },
+    // Mini snakes along side pods
+    { type: 'mini_snake', x:  20,   z:  28,   rotY: -0.785 },
+    { type: 'mini_snake', x:  20,   z: -28,   rotY:  0.785 },
   ],
 };
 
@@ -2167,6 +2289,7 @@ let armedCard   = null;
 let ghost3D     = null;
 
 let mode         = 'select';
+let mobileMultiMode = false;
 let playerTeam   = 'red';
 let playerWeapon = 'R';
 
@@ -2220,15 +2343,26 @@ function setMode(m) {
     document.getElementById(`btn-mode-${id}`).classList.toggle('on', id === m)
   );
   document.getElementById('player-panel').style.display = m === 'player' ? 'flex' : 'none';
-  // right-panel is hidden via CSS; snap/mirror are now in toolbar
   document.body.classList.toggle('arrow-mode', m === 'arrow');
   if (m !== 'select') { deselect(); disarm(); }
+  // Turn off multi-select when leaving Select mode
+  if (m !== 'select' && mobileMultiMode) {
+    mobileMultiMode = false;
+    document.getElementById('btn-multi-select').classList.remove('on');
+  }
   canvas.style.cursor = m === 'player' ? 'cell' : 'default';
 }
 
 document.getElementById('btn-mode-select').addEventListener('click', () => setMode('select'));
 document.getElementById('btn-mode-player').addEventListener('click', () => setMode('player'));
 document.getElementById('btn-mode-arrow').addEventListener('click',  () => setMode('arrow'));
+
+document.getElementById('btn-multi-select').addEventListener('click', () => {
+  mobileMultiMode = !mobileMultiMode;
+  document.getElementById('btn-multi-select').classList.toggle('on', mobileMultiMode);
+  // Switch to select mode when enabling multi
+  if (mobileMultiMode) setMode('select');
+});
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SIDEBAR OPEN/CLOSE (mobile)
@@ -2538,6 +2672,13 @@ function addSerapeStripes(g) {
 // ── Face: pure geometry so it always renders correctly ───────────────────────
 // Skin tones + eye colors vary by seed — no canvas needed
 const SKIN_TONES  = [0xffd5b0, 0xf0a868, 0xc07840, 0x8b5a2b, 0x4a2810];
+// Carpinteros skin: 64.28% brown tones, 35.72% light/yellow
+function carpSkinTone(seed) {
+  return (seed % 100) < 64
+    ? SKIN_TONES[1 + (seed % 4)]   // brown shades
+    : SKIN_TONES[0];               // light/peach
+}
+function isCarpBrown(seed) { return (seed % 100) < 64; }
 const HAIR_COLORS = [0x111111, 0x3b1f0a, 0x8b5e1a, 0xd4a020, 0xcc2200];
 const LENS_COLORS = [0x00aaff, 0xff4400, 0xffcc00, 0x00dd44, 0xee00ee];
 const MASK_COLORS = [
@@ -2553,7 +2694,7 @@ const MASK_COLORS = [
   0x334400, // army green
 ];
 
-function addFaceFeatures(head, seed, radius, root) {
+function addFaceFeatures(head, seed, radius, root, team = '') {
   const mk = (geo, col, px, py, pz, rx, ry, rz) => {
     const m = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ color: col }));
     m.position.set(px, py, pz);
@@ -2569,7 +2710,8 @@ function addFaceFeatures(head, seed, radius, root) {
   const maskDark = new THREE.Color(maskCol).multiplyScalar(0.65).getHex();
 
   // Skin tone
-  head.material = new THREE.MeshLambertMaterial({ color: SKIN_TONES[seed % 5] });
+  const skinColor = team === 'carpinteros' ? carpSkinTone(seed) : SKIN_TONES[seed % 5];
+  head.material = new THREE.MeshLambertMaterial({ color: skinColor });
 
   // ── JT Proflex-style paintball mask ─────────────────────────────────────
   // The Proflex has 3 key parts:
@@ -2631,9 +2773,6 @@ function addFaceFeatures(head, seed, radius, root) {
   mk(new THREE.BoxGeometry(r * 0.14, r * 0.22, r * 0.18), 0x111111,
       (r * 1.06), r * 0.18, r * 0.10);
 
-  // Hair on top (varies by seed)
-  mk(new THREE.SphereGeometry(r * 0.74, 8, 5, 0, Math.PI * 2, 0, Math.PI * 0.52),
-     HAIR_COLORS[(seed >> 2) % 5], 0, r * 0.28, 0);
 }
 
 // ── Weapon meshes — distinct silhouettes, oriented along -Z (forward) ─────────
@@ -2720,22 +2859,42 @@ function makeWeaponMesh(weapon) {
 function buildPlayerMeshes(g, team, stance) {
   const col      = TEAM_COLORS[team] ?? 0xffffff;
   const isCarp   = (team === 'carpinteros');
-  // Carpinteros have dark-brown skin tone; other teams use their team colour
-  const bodyCol  = isCarp ? 0x6b3a1e : col;
+  const bodyCol  = col;  // use team color for clothing
   const bm       = () => new THREE.MeshLambertMaterial({ color: bodyCol });
 
   const add = (...meshes) => meshes.forEach(m => { m.userData.root = g; g.add(m); });
 
-  const face   = g.userData.faceIndex ?? 0;
-  const weapon = g.userData.weapon ?? 'rifle';
+  const face        = g.userData.faceIndex  ?? 0;
+  const weapon      = g.userData.weapon     ?? 'rifle';
+  const playerWidth = g.userData.playerWidth ?? 1;
+  const bellyBulge  = Math.max(0, playerWidth - 1.0);
 
   const addWeapon = (wpn, pos, rx, ry, rz) => {
     const wm = makeWeaponMesh(wpn);
-    wm.scale.setScalar(1.5); // scale up to match figure
+    wm.scale.setScalar(1.5);
     wm.position.copy(pos);
     wm.rotation.set(rx ?? 0, ry ?? 0, rz ?? 0);
     wm.traverse(c => { if (c.isMesh) c.userData.root = g; });
     g.add(wm);
+  };
+
+  // Belly helper — protrudes forward (-Z) based on bellyBulge
+  const addBelly = (yPos, zBase) => {
+    if (bellyBulge < 0.02) return;
+    const r = 0.36 + bellyBulge * 0.55;
+    const belly = new THREE.Mesh(new THREE.SphereGeometry(r, 12, 10), bm());
+    belly.position.set(0, yPos, zBase - bellyBulge * 0.22);
+    belly.scale.set(1.05 + bellyBulge * 0.25, 0.85, 1.0);
+    belly.userData.root = g; g.add(belly);
+  };
+
+  // Buttcheeks helper — two spheres behind hips (+Z)
+  const addButtcheeks = (yPos, zPos) => {
+    [-0.20, 0.20].forEach(xOff => {
+      const b = new THREE.Mesh(new THREE.SphereGeometry(0.21, 8, 6), bm());
+      b.position.set(xOff, yPos, zPos);
+      b.userData.root = g; g.add(b);
+    });
   };
 
   if (stance === 'crouching') {
@@ -2750,18 +2909,21 @@ function buildPlayerMeshes(g, team, stance) {
     torso.position.set(0, 2.55, 0.25); torso.rotation.x = 0.38;
     const head  = new THREE.Mesh(new THREE.SphereGeometry(0.52, 10, 8), bm());
     head.position.set(0, 3.45, 0.38);
-    addFaceFeatures(head, face, 0.52, g);
+    addFaceFeatures(head, face, 0.52, g, team);
     const armL  = new THREE.Mesh(new THREE.BoxGeometry(0.32, 1.3, 0.38), bm());
     armL.position.set(-0.72, 2.3, 0.4); armL.rotation.z = 0.5; armL.rotation.x = 0.55;
     const armR  = new THREE.Mesh(new THREE.BoxGeometry(0.32, 1.3, 0.38), bm());
     armR.position.set( 0.72, 2.3, 0.4); armR.rotation.z = -0.5; armR.rotation.x = 0.55;
     add(legL, legR, hips, torso, head, armL, armR);
-    // Weapon held out front at chest height
+    addButtcheeks(1.55, 0.52);
+    addBelly(2.3, -0.10);
     addWeapon(weapon, new THREE.Vector3(0.55, 2.4, -0.8), 0.5, 0, 0);
     if (isCarp) {
       addSerapeStripes(g);
-      const hat = makeSombrero(); hat.position.set(0, 3.45, 0.38); hat.rotation.x = 0.38;
-      hat.traverse(c => { if (c.isMesh) c.userData.root = g; }); g.add(hat);
+      if (isCarpBrown(face)) {
+        const hat = makeSombrero(); hat.position.set(0, 3.75, 0.38); hat.rotation.x = -0.15;
+        hat.traverse(c => { if (c.isMesh) c.userData.root = g; }); g.add(hat);
+      }
     }
     return 5.0;
 
@@ -2771,7 +2933,7 @@ function buildPlayerMeshes(g, team, stance) {
     body.position.set(0, 0.42, 0);
     const head  = new THREE.Mesh(new THREE.SphereGeometry(0.46, 10, 8), bm());
     head.position.set(0, 0.72, -1.7);
-    addFaceFeatures(head, face, 0.46, g);
+    addFaceFeatures(head, face, 0.46, g, team);
     const armL  = new THREE.Mesh(new THREE.BoxGeometry(0.30, 0.36, 1.3), bm());
     armL.position.set(-0.68, 0.42, -1.55);
     const armR  = new THREE.Mesh(new THREE.BoxGeometry(0.30, 0.36, 1.3), bm());
@@ -2781,7 +2943,12 @@ function buildPlayerMeshes(g, team, stance) {
     const legR  = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.38, 1.45), bm());
     legR.position.set( 0.26, 0.3, 1.25);
     add(body, head, armL, armR, legL, legR);
-    // Weapon pointing forward while prone
+    // Buttcheeks visible on top of body (dorsal side when prone)
+    [-0.18, 0.18].forEach(xOff => {
+      const b = new THREE.Mesh(new THREE.SphereGeometry(0.20, 8, 6), bm());
+      b.position.set(xOff, 0.64, 0.7);
+      b.userData.root = g; g.add(b);
+    });
     addWeapon(weapon, new THREE.Vector3(0, 0.65, -2.8), 0, 0, 0);
     if (isCarp) {
       const STRIPE_H = 0.115;
@@ -2791,8 +2958,10 @@ function buildPlayerMeshes(g, team, stance) {
         m.position.set(0, 0.44, -1.05 + i * (STRIPE_H + 0.01));
         m.userData.root = g; g.add(m);
       });
-      const hat = makeSombrero(); hat.position.set(0, 0.72, -1.7); hat.rotation.x = -Math.PI / 2;
-      hat.traverse(c => { if (c.isMesh) c.userData.root = g; }); g.add(hat);
+      if (isCarpBrown(face)) {
+        const hat = makeSombrero(); hat.position.set(0, 0.72, -1.7); hat.rotation.x = -Math.PI / 2;
+        hat.traverse(c => { if (c.isMesh) c.userData.root = g; }); g.add(hat);
+      }
     }
     return 2.2;
 
@@ -2808,19 +2977,22 @@ function buildPlayerMeshes(g, team, stance) {
     torso.position.y = 4.30;
     const head  = new THREE.Mesh(new THREE.SphereGeometry(0.52, 10, 8), bm());
     head.position.y = 5.58;
-    addFaceFeatures(head, face, 0.52, g);
+    addFaceFeatures(head, face, 0.52, g, team);
     const armL  = new THREE.Mesh(new THREE.BoxGeometry(0.32, 1.55, 0.38), bm());
     armL.position.set(-0.75, 4.15, 0); armL.rotation.z =  0.25;
     const armR  = new THREE.Mesh(new THREE.BoxGeometry(0.32, 1.55, 0.38), bm());
     armR.position.set( 0.75, 4.15, 0); armR.rotation.z = -0.25;
     add(legL, legR, hips, torso, head, armL, armR);
-    // Weapon held at chest height pointing forward
+    addButtcheeks(3.05, 0.36);
+    addBelly(3.85, -0.28);
     addWeapon(weapon, new THREE.Vector3(0.55, 4.2, -0.9), 0.25, 0, -0.15);
     if (isCarp) {
       addSerapeStripes(g);
-      // brim sits at mid-skull so crown wraps over head
-      const hat = makeSombrero(); hat.position.set(0, 5.58, 0);
-      hat.traverse(c => { if (c.isMesh) c.userData.root = g; }); g.add(hat);
+      if (isCarpBrown(face)) {
+        // Raise hat above head sphere, slight backward tilt
+        const hat = makeSombrero(); hat.position.set(0, 6.12, 0); hat.rotation.x = -0.18;
+        hat.traverse(c => { if (c.isMesh) c.userData.root = g; }); g.add(hat);
+      }
     }
     return 7.6;
   }
@@ -2865,6 +3037,12 @@ function getPlayerGroundY(x, z) {
 // Standing figure top-of-head = ~6.10 units → scale = 5.833/6.10 ≈ 0.957
 const PLAYER_SCALE = 5.833 / 6.10;
 
+function applyPlayerScale(g) {
+  const h = g.userData.playerHeight ?? 1;
+  // Width is expressed via belly mesh in buildPlayerMeshes, not scale
+  g.scale.set(PLAYER_SCALE, PLAYER_SCALE * h, PLAYER_SCALE);
+}
+
 function placePlayer(pos) {
   const g = new THREE.Group();
   g.position.copy(pos);
@@ -2872,14 +3050,16 @@ function placePlayer(pos) {
   g.position.y = getPlayerGroundY(pos.x, pos.z);
   // Face toward the midline (z=0): positive z side faces negative z, and vice versa
   g.rotation.y = pos.z >= 0 ? 0 : Math.PI;
+  g.userData.kind         = 'player';
+  g.userData.team         = playerTeam;
+  g.userData.weapon       = playerWeapon;
+  g.userData.playerName   = '';
+  g.userData.stance       = 'standing';
+  g.userData.faceIndex    = Math.floor(Math.random() * 125); // random face seed
+  g.userData.playerHeight = 1;
+  g.userData.playerWidth  = 1;
   // Scale to real-world 5'10" proportional to 1 unit = 1 ft field
-  g.scale.setScalar(PLAYER_SCALE);
-  g.userData.kind       = 'player';
-  g.userData.team       = playerTeam;
-  g.userData.weapon     = playerWeapon;
-  g.userData.playerName = '';
-  g.userData.stance     = 'standing';
-  g.userData.faceIndex  = Math.floor(Math.random() * 125); // random face seed
+  applyPlayerScale(g);
 
   const spriteH = buildPlayerMeshes(g, playerTeam, 'standing');
 
@@ -3100,10 +3280,11 @@ canvas.addEventListener('pointerdown', e => {
     if (!g) return;
     // If clicking an already-selected object without shift, keep the multi-select
     // intact so the whole group can be dragged. Only update the drag anchor.
-    if (selSet.has(g) && selSet.size > 1 && !e.shiftKey) {
+    const multiKey = e.shiftKey || mobileMultiMode;
+    if (selSet.has(g) && selSet.size > 1 && !multiKey) {
       selected = g;
     } else {
-      select(g, e.shiftKey);
+      select(g, multiKey);
     }
 
     // Double-click to rename this bunker instance
@@ -3133,7 +3314,7 @@ canvas.addEventListener('pointerdown', e => {
       boxEl.style.cssText = `display:block;left:${boxStart.x}px;top:${boxStart.y}px;width:0;height:0;`;
       controls.enabled = false;
     }
-    if (!e.shiftKey) deselect();
+    if (!e.shiftKey && !mobileMultiMode) deselect();
   }
 });
 
@@ -3398,6 +3579,15 @@ canvas.addEventListener('contextmenu', e => {
   // Rename only makes sense for a single object
   document.getElementById('ctx-rename').style.display = (!multi && (isBunker || isPlayer)) ? 'block' : 'none';
   document.getElementById('ctx-stance-group').style.display = isPlayer ? 'block' : 'none';
+  document.getElementById('ctx-player-size-group').style.display = isPlayer ? 'block' : 'none';
+  if (isPlayer) {
+    const h = Math.round((selected.userData.playerHeight ?? 1) * 100);
+    const w = Math.round((selected.userData.playerWidth  ?? 1) * 100);
+    document.getElementById('ctx-height-slider').value = h;
+    document.getElementById('ctx-width-slider').value  = w;
+    document.getElementById('ctx-height-val').textContent = h + '%';
+    document.getElementById('ctx-width-val').textContent  = w + '%';
+  }
   // Bunker color group: show when right-clicked obj is a bunker (not players)
   document.getElementById('ctx-bunker-group').style.display = isBunker ? 'block' : 'none';
   if (isBunker) {
@@ -3411,6 +3601,26 @@ function closeCtxMenu() { ctxMenu.classList.remove('open'); }
 document.addEventListener('pointerdown', e => {
   if (!ctxMenu.contains(e.target)) closeCtxMenu();
 }, true);
+
+// Player size sliders
+document.getElementById('ctx-height-slider').addEventListener('input', e => {
+  if (!selected || selected.userData.kind !== 'player') return;
+  const v = parseInt(e.target.value) / 100;
+  selected.userData.playerHeight = v;
+  document.getElementById('ctx-height-val').textContent = e.target.value + '%';
+  applyPlayerScale(selected);
+  autoSave();
+});
+document.getElementById('ctx-width-slider').addEventListener('input', e => {
+  if (!selected || selected.userData.kind !== 'player') return;
+  const v = parseInt(e.target.value) / 100;
+  selected.userData.playerWidth = v;
+  document.getElementById('ctx-width-val').textContent = e.target.value + '%';
+  // Rebuild meshes so belly appears/grows
+  setPlayerStance(selected, selected.userData.stance, true);
+  applyPlayerScale(selected);
+  autoSave();
+});
 
 // Long-press on canvas for context menu on touch devices (500ms)
 // Double-tap to rename on mobile
@@ -4030,11 +4240,25 @@ const RELEASES = [
       '<strong>Additional fields</strong> — want your field represented in the app? Reach out to <a href="https://www.instagram.com/bryan.paintball/" target="_blank" rel="noopener" style="color:var(--blue)">@bryan.paintball</a> on Instagram',
     ],
   },
+  // ── v1.0 ───────────────────────────────────────────────────────────────────
+  {
+    version: 'v1.0',
+    date: 'Apr 2026',
+    badge: 'latest',
+    items: [
+      '<strong>Unlimited play slots</strong> — no more 8-play cap; add as many plays as you need with the + button',
+      '<strong>Export Save includes everything</strong> — Export Save now saves all play slots, arrows, playbook state, and field data in one file',
+      '<strong>Adrenaline Paintball field</strong> — new field added with full NXL-style bunker palette in bright paintball colors',
+      '<strong>Player height & width</strong> — right-click any player to adjust their height (70–130%) and width (70–150%) with sliders',
+      '<strong>Carpinteros skin tones</strong> — 64% of Carpinteros players spawn with varied brown skin tones; the remaining 36% get light skin. Light-skin players do not wear a sombrero',
+      '<strong>Mobile multi-select</strong> — new Multi button in the toolbar; tap to enable, then tap objects to add/remove from the selection group for CW/CCW/Delete on touch devices',
+    ],
+  },
   // ── v0.9 ───────────────────────────────────────────────────────────────────
   {
     version: 'v0.9',
     date: 'Apr 2026',
-    badge: 'latest',
+    badge: '',
     items: [
       '<strong>Playbook system</strong> — save up to 8 plays per field; each play stores players + arrows while bunkers stay fixed; click a slot to auto-save current and switch',
       '<strong>Dynamic play slots</strong> — starts with Play 1; tap + to add more slots as needed',
