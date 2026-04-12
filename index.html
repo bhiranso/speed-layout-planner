@@ -161,6 +161,8 @@ body {
   box-shadow: 0 4px 20px rgba(0,0,0,0.45), 0 1px 0 rgba(255,255,255,0.05) inset;
   pointer-events: all;
   flex-shrink: 0;
+  user-select: none;
+  -webkit-user-select: none;
 }
 .tbtn {
   padding: 4px 11px;
@@ -174,6 +176,9 @@ body {
   transition: background 0.15s, color 0.15s;
   white-space: nowrap;
   flex-shrink: 0;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
 }
 .tbtn:hover { background: rgba(255,255,255,0.08); color: var(--text); }
 .tbtn.on { background: var(--blue); color: #fff; }
