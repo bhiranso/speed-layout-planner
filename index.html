@@ -597,20 +597,22 @@ button, label[style*="cursor:pointer"] { touch-action: manipulation; }
 }
 
 /* ── Mobile sidebar toggle ── */
+.mobile-only-close { display: none; }
+
 #sidebar-toggle {
   display: none;
-  position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+  position: fixed; bottom: 20px; left: 16px;
   z-index: 110;
   background: var(--glass); border: 1px solid rgba(255,255,255,0.15);
-  border-radius: var(--radius-pill); padding: 10px 22px;
+  border-radius: var(--radius-pill); padding: 10px;
   color: var(--text); font-family: var(--font);
-  font-size: 14px; font-weight: 600;
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
   box-shadow: 0 4px 20px rgba(0,0,0,0.5), 0 1px 0 rgba(255,255,255,0.08) inset;
   cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent;
-  gap: 8px; align-items: center;
+  align-items: center; justify-content: center;
 }
+body.sidebar-open #sidebar-toggle { display: none; }
 
 /* ── Sidebar drawer handle (mobile) ── */
 .drawer-handle {
@@ -696,10 +698,22 @@ button, label[style*="cursor:pointer"] { touch-action: manipulation; }
   .tbtn-sep { margin: 0 1px; }
   /* Hide desktop-only collapse tab — mobile uses the drawer handle */
   #sidebar-collapse-btn { display: none !important; }
+  .mobile-only-close { display: none; }
 
   /* Right panel — anchor above toggle button */
   #right-panel { top: auto; bottom: 86px; right: 14px; }
   .rpbtn { font-size: 12px; padding: 8px 14px; }
+
+  /* Mobile close button */
+  .mobile-only-close { display: flex; }
+  #sidebar-mobile-close {
+    position: absolute; top: 12px; right: 12px;
+    background: var(--bg2); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: var(--radius-sm); padding: 8px;
+    color: var(--text2); cursor: pointer;
+    align-items: center; justify-content: center;
+  }
+  #sidebar-mobile-close:hover { background: var(--bg3); color: var(--text); }
 
   /* Info bar hidden (no keyboard hints on mobile) */
   #info-bar { display: none; }
@@ -888,7 +902,6 @@ button, label[style*="cursor:pointer"] { touch-action: manipulation; }
     <rect x="2" y="7.25" width="12" height="1.5" rx="0.75" fill="currentColor"/>
     <rect x="2" y="10.5" width="12" height="1.5" rx="0.75" fill="currentColor"/>
   </svg>
-  Bunkers
 </button>
 <div id="drag-ghost"></div>
 
@@ -999,7 +1012,7 @@ button, label[style*="cursor:pointer"] { touch-action: manipulation; }
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-const LAST_UPDATED = 'Apr 12, 2026 · 3:34 PM';
+const LAST_UPDATED = 'Apr 12, 2026 · 4:21 PM';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // FIELD DEFINITIONS  (placeholder bunkers — real data coming later)
@@ -1767,6 +1780,11 @@ function buildSidebar() {
   const wasCollapsed = document.body.classList.contains('sidebar-collapsed');
   sidebar.innerHTML = `
     <div class="drawer-handle"></div>
+    <button id="sidebar-mobile-close" class="mobile-only-close" title="Close panel">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+        <path d="M2 2 L12 12 M12 2 L2 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </button>
     <button id="sidebar-collapse-btn" title="Collapse panel">
       <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
         <path id="collapse-icon" d="${wasCollapsed ? 'M4 2 L8 6 L4 10' : 'M8 2 L4 6 L8 10'}" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
@@ -1906,6 +1924,7 @@ function buildSidebar() {
     sidebar.appendChild(sec);
   });
   bindCollapseBtn();
+  bindMobileCloseBtn();
 
 
   // Playbook slot buttons — click to auto-save current play then switch
@@ -2274,6 +2293,12 @@ function bindCollapseBtn() {
   });
 }
 
+function bindMobileCloseBtn() {
+  const btn = document.getElementById('sidebar-mobile-close');
+  if (!btn) return;
+  btn.addEventListener('click', closeSidebar);
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // INTERACTION STATE
 // ─────────────────────────────────────────────────────────────────────────────
@@ -2372,21 +2397,11 @@ const toggleBtn = document.getElementById('sidebar-toggle');
 
 function openSidebar() {
   document.body.classList.add('sidebar-open');
-  toggleBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-    <path d="M3 11 L8 5 L13 11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-  </svg> Close`;
 }
 function closeSidebar() {
   document.body.classList.remove('sidebar-open');
-  toggleBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-    <rect x="2" y="4" width="12" height="1.5" rx="0.75" fill="currentColor"/>
-    <rect x="2" y="7.25" width="12" height="1.5" rx="0.75" fill="currentColor"/>
-    <rect x="2" y="10.5" width="12" height="1.5" rx="0.75" fill="currentColor"/>
-  </svg> Bunkers`;
 }
-toggleBtn.addEventListener('click', () =>
-  document.body.classList.contains('sidebar-open') ? closeSidebar() : openSidebar()
-);
+toggleBtn.addEventListener('click', openSidebar);
 canvas.addEventListener('pointerdown', () => {
   if (isMobile() && document.body.classList.contains('sidebar-open')) closeSidebar();
 }, { capture: true, passive: true });
