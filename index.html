@@ -2702,7 +2702,7 @@ function updateSelectedInfo() {
   if (k === 'bunker') {
     const name = selected.userData.bunker?.label;
     label = isMobile()
-      ? `${name} — toolbar to rotate/delete · double-tap or long-press to rename`
+      ? `${name} — toolbar to rotate/delete · double-tap to rename`
       : `${name} — R/E rotate · Del remove · double-click or right-click to rename`;
   }
   if (k === 'player') {
@@ -2710,7 +2710,7 @@ function updateSelectedInfo() {
     const name   = selected.userData.playerName ? ` "${selected.userData.playerName}"` : '';
     const stance = selected.userData.stance || 'standing';
     label = isMobile()
-      ? `${t} ${selected.userData.weapon}${name} [${stance}] — drag · CW/CCW rotate · long-press for options`
+      ? `${t} ${selected.userData.weapon}${name} [${stance}] — drag · CW/CCW rotate · double-tap to rename`
       : `${t} ${selected.userData.weapon}${name} [${stance}] — drag · R/E or CW/CCW rotate · Del remove · right-click for options`;
   }
   el.textContent = label;
@@ -2904,21 +2904,15 @@ canvas.addEventListener('pointerup', e => {
   const btnCW  = document.getElementById('btn-rcw');
   const btnCCW = document.getElementById('btn-rccw');
 
-  // Mouse
-  btnCW.addEventListener('mousedown',  cw.startHold);
-  btnCW.addEventListener('mouseup',    cw.stopHold);
-  btnCW.addEventListener('mouseleave', cw.stopHold);
-  btnCCW.addEventListener('mousedown',  ccw.startHold);
-  btnCCW.addEventListener('mouseup',    ccw.stopHold);
-  btnCCW.addEventListener('mouseleave', ccw.stopHold);
+  function wire(btn, handler) {
+    btn.addEventListener('pointerdown', e => { e.preventDefault(); btn.setPointerCapture(e.pointerId); handler.startHold(); }, { passive: false });
+    btn.addEventListener('pointerup',     () => handler.stopHold());
+    btn.addEventListener('pointercancel', () => handler.stopHold());
+    btn.addEventListener('pointerleave',  () => handler.stopHold());
+  }
 
-  // Touch
-  btnCW.addEventListener('touchstart',  e => { e.preventDefault(); cw.startHold(); },  { passive: false });
-  btnCW.addEventListener('touchend',    e => { e.preventDefault(); cw.stopHold(); },   { passive: false });
-  btnCW.addEventListener('touchcancel', cw.stopHold);
-  btnCCW.addEventListener('touchstart',  e => { e.preventDefault(); ccw.startHold(); }, { passive: false });
-  btnCCW.addEventListener('touchend',    e => { e.preventDefault(); ccw.stopHold(); },  { passive: false });
-  btnCCW.addEventListener('touchcancel', ccw.stopHold);
+  wire(btnCW,  cw);
+  wire(btnCCW, ccw);
 })();
 document.getElementById('btn-del').addEventListener('click', () => { if (selected) deleteObject(selected); });
 document.getElementById('btn-clear').addEventListener('click', () => {
@@ -3039,6 +3033,33 @@ document.addEventListener('pointerdown', e => {
 }, true);
 
 // Long-press on canvas for context menu on touch devices (500ms)
+// Double-tap to rename on mobile
+let lastTapObj  = null;
+let lastTapTime = 0;
+canvas.addEventListener('touchend', e => {
+  if (walkMode || mode !== 'select') return;
+  if (e.changedTouches.length !== 1) return;
+  const t = e.changedTouches[0];
+  const now = Date.now();
+  // Raycast at tap position
+  const rect = canvas.getBoundingClientRect();
+  const ndcX = ((t.clientX - rect.left) / rect.width)  * 2 - 1;
+  const ndcY = -((t.clientY - rect.top)  / rect.height) * 2 + 1;
+  raycaster.setFromCamera({ x: ndcX, y: ndcY }, camera);
+  const pickMeshes = [];
+  [...placed, ...players].forEach(g => g.traverse(c => { if (c.isMesh || c.isSprite) pickMeshes.push(c); }));
+  const hits = raycaster.intersectObjects(pickMeshes);
+  const g = hits.length ? hits[0].object.userData.root : null;
+  if (g && g === lastTapObj && now - lastTapTime < 400) {
+    openRenameModal(g);
+    lastTapObj = null; lastTapTime = 0;
+  } else {
+    lastTapObj  = g;
+    lastTapTime = now;
+  }
+}, { passive: true });
+
+// Long-press → context menu (kept for options other than rename)
 let longPressTimer = null;
 let longPressPos   = null;
 canvas.addEventListener('touchstart', e => {
@@ -3046,7 +3067,6 @@ canvas.addEventListener('touchstart', e => {
   const t = e.touches[0];
   longPressPos = { x: t.clientX, y: t.clientY };
   longPressTimer = setTimeout(() => {
-    // Simulate contextmenu at long-press position
     canvas.dispatchEvent(new MouseEvent('contextmenu', {
       bubbles: true, cancelable: true,
       clientX: longPressPos.x, clientY: longPressPos.y
