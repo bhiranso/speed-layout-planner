@@ -1,0 +1,3776 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Speedsoft Layout Planner</title>
+<style>
+:root {
+  /* Apple dark mode system palette */
+  --bg:          #000000;
+  --bg1:         #1c1c1e;
+  --bg2:         #2c2c2e;
+  --bg3:         #3a3a3c;
+  --separator:   rgba(84,84,88,0.65);
+  --text:        #ffffff;
+  --text2:       rgba(235,235,245,0.6);
+  --text3:       rgba(235,235,245,0.3);
+  --blue:        #0a84ff;
+  --blue-tint:   rgba(10,132,255,0.15);
+  --glass:       rgba(28,28,30,0.85);
+  --glass-light: rgba(44,44,46,0.7);
+  --radius-sm:   8px;
+  --radius-md:   12px;
+  --radius-lg:   16px;
+  --radius-pill: 100px;
+  /* SF Pro stack — uses the real SF Pro font when on Apple devices */
+  --font: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text',
+          'Helvetica Neue', Arial, sans-serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  display: flex; height: 100vh; overflow: hidden;
+  background: var(--bg); color: var(--text);
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Sidebar ── */
+#sidebar {
+  width: 224px; min-width: 224px;
+  background: var(--bg1);
+  border-right: 1px solid var(--separator);
+  display: flex; flex-direction: column;
+  overflow-y: auto; z-index: 10;
+}
+#sidebar::-webkit-scrollbar { width: 0; }
+
+/* Header */
+#sidebar-header {
+  padding: 20px 16px 14px;
+  background: var(--bg1);
+  border-bottom: 1px solid var(--separator);
+  flex-shrink: 0;
+}
+.app-icon-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 10px;
+}
+.app-icon {
+  width: 36px; height: 36px; border-radius: 9px;
+  background: linear-gradient(145deg, #1a6fff, #0a84ff);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(10,132,255,0.4);
+}
+.app-title {
+  font-size: 15px; font-weight: 600; color: var(--text); letter-spacing: -0.3px;
+}
+.app-subtitle {
+  font-size: 11px; color: var(--text2); letter-spacing: -0.1px; margin-top: 1px;
+}
+.sidebar-hint {
+  font-size: 11px; color: var(--text3); letter-spacing: -0.1px;
+}
+
+/* Section groups */
+.bunker-section { padding: 8px 10px 4px; flex-shrink: 1; }
+.section-label {
+  font-size: 11px; font-weight: 600; color: var(--text3);
+  letter-spacing: 0.06em; text-transform: uppercase;
+  padding: 10px 6px 5px;
+}
+
+/* Bunker cards */
+.bunker-card {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 8px; margin-bottom: 2px;
+  background: var(--bg2);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: var(--radius-sm);
+  cursor: grab; user-select: none;
+  transition: background 0.15s ease, transform 0.1s ease;
+  position: relative;
+}
+.bunker-card:hover { background: var(--bg3); transform: scale(1.01); }
+.bunker-card:hover .bunker-rename-btn { opacity: 1; }
+.bunker-card:active { cursor: grabbing; transform: scale(0.99); }
+
+/* Rename-type button on bunker cards */
+.bunker-rename-btn {
+  opacity: 0;
+  margin-left: auto;
+  flex-shrink: 0;
+  background: none;
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 5px;
+  color: var(--text2);
+  padding: 3px 6px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: opacity 0.15s, background 0.15s;
+  line-height: 1;
+  touch-action: manipulation;
+}
+.bunker-rename-btn:hover { background: var(--bg3); color: var(--text); }
+/* Always visible on touch devices */
+@media (hover: none) { .bunker-rename-btn { opacity: 1; } }
+
+.bunker-icon {
+  width: 34px; height: 34px;
+  border-radius: 7px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.bunker-name {
+  font-size: 13px; font-weight: 500; color: var(--text);
+  letter-spacing: -0.1px;
+}
+.bunker-desc {
+  font-size: 11px; color: var(--text2); margin-top: 1px; letter-spacing: -0.1px;
+}
+
+/* ── Canvas ── */
+#canvas-wrap { flex: 1; position: relative; overflow: hidden; }
+#three-canvas { display: block; width: 100%; height: 100%; }
+
+/* ── Toolbar — two rows pinned to top of canvas ── */
+#toolbar-wrap {
+  position: absolute; top: 0; left: 0; right: 0;
+  display: flex; flex-direction: column; gap: 4px;
+  padding: 10px 12px 0;
+  z-index: 20;
+  pointer-events: none;   /* rows themselves pass clicks through */
+}
+.tb-row {
+  display: flex; align-items: center; gap: 4px;
+  flex-wrap: nowrap;
+  pointer-events: none;
+}
+/* Each logical group is its own pill */
+.tb-group {
+  display: flex; align-items: center; gap: 1px;
+  background: var(--glass);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: var(--radius-pill);
+  padding: 4px 5px;
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.45), 0 1px 0 rgba(255,255,255,0.05) inset;
+  pointer-events: all;
+  flex-shrink: 0;
+}
+.tbtn {
+  padding: 4px 11px;
+  background: transparent; border: none;
+  border-radius: var(--radius-pill);
+  color: var(--text2);
+  font-family: var(--font);
+  font-size: 12px; font-weight: 500;
+  letter-spacing: -0.1px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.tbtn:hover { background: rgba(255,255,255,0.08); color: var(--text); }
+.tbtn.on { background: var(--blue); color: #fff; }
+.tbtn.danger:hover { background: rgba(255,59,48,0.18); color: #ff453a; }
+.tbtn-sep { width: 1px; height: 14px; background: var(--separator); margin: 0 2px; flex-shrink: 0; }
+
+/* Right panel removed — Snap/Mirror are now tb-groups in the toolbar */
+#right-panel { display: none !important; }
+
+/* ── Info bar ── */
+#info-bar {
+  position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%);
+  background: var(--glass);
+  padding: 6px 18px;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: var(--radius-pill);
+  font-family: var(--font);
+  font-size: 11px; font-weight: 400;
+  letter-spacing: -0.1px;
+  color: var(--text3);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  white-space: nowrap; z-index: 20;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.35);
+}
+
+/* ── Selected indicator ── */
+#selected-info {
+  position: absolute; bottom: 46px; left: 50%; transform: translateX(-50%);
+  background: var(--blue-tint);
+  border: 1px solid rgba(10,132,255,0.35);
+  padding: 5px 16px; border-radius: var(--radius-pill);
+  font-family: var(--font);
+  font-size: 12px; font-weight: 500; color: var(--blue);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  z-index: 20; display: none; white-space: nowrap;
+}
+
+/* ── Field selector ── */
+.field-selector-wrap { margin-top: 10px; position: relative; }
+.field-selector-label {
+  font-size: 10px; font-weight: 500; color: var(--text3);
+  text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 5px;
+}
+.field-select-control { position: relative; display: flex; align-items: center; }
+#field-select {
+  width: 100%; appearance: none; -webkit-appearance: none;
+  background: var(--bg2); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: var(--radius-sm); color: var(--text);
+  font-family: var(--font); font-size: 13px; font-weight: 500;
+  padding: 8px 32px 8px 10px; cursor: pointer; outline: none;
+  transition: border-color 0.15s, background 0.15s;
+}
+#field-select:focus { border-color: var(--blue); background: var(--bg3); }
+#field-select option { background: #2c2c2e; color: #fff; }
+.field-select-chevron { position: absolute; right: 10px; pointer-events: none; color: var(--text3); }
+
+/* ── Mode buttons ── */
+.tbtn.mode-btn.on { background: var(--blue); color: #fff; border-color: transparent; }
+
+/* ── Player panel ── */
+#player-panel {
+  position: absolute; top: 96px; right: 14px;
+  display: none; flex-direction: column; gap: 8px; z-index: 20;
+  background: var(--glass); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: var(--radius-md); padding: 12px;
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+  min-width: 160px;
+}
+.pp-label {
+  font-size: 10px; font-weight: 600; color: var(--text3);
+  text-transform: uppercase; letter-spacing: 0.08em;
+}
+.pp-row { display: flex; gap: 5px; flex-wrap: wrap; }
+.team-btn, .weapon-btn {
+  padding: 5px 11px; background: var(--bg2);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: var(--radius-pill);
+  color: var(--text2); font-family: var(--font);
+  font-size: 12px; font-weight: 500;
+  cursor: pointer; transition: all 0.12s; white-space: nowrap;
+}
+.team-btn:hover, .weapon-btn:hover { background: var(--bg3); color: var(--text); }
+.team-btn[data-team="red"].on  { background: rgba(255,59,48,0.2);  border-color: #ff3b30; color: #ff3b30; }
+.team-btn[data-team="blue"].on { background: rgba(10,132,255,0.2); border-color: var(--blue); color: var(--blue); }
+.weapon-btn.on { background: var(--blue-tint); border-color: var(--blue); color: var(--blue); }
+
+/* ── Ghost cursor ── */
+#drag-ghost { position: fixed; pointer-events: none; z-index: 1000; display: none; }
+
+/* ── Sidebar collapse (desktop) ── */
+#sidebar-collapse-btn {
+  position: fixed; top: 50%; left: 210px;
+  transform: translateY(-50%);
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--bg2); border: 1px solid var(--separator);
+  color: var(--text2); cursor: pointer; z-index: 30;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s, color 0.15s, left 0.25s ease;
+  flex-shrink: 0;
+}
+#sidebar-collapse-btn:hover { background: var(--bg3); color: var(--text); }
+#sidebar { transition: width 0.25s ease, min-width 0.25s ease; overflow-x: hidden; overflow-y: auto; }
+body.sidebar-collapsed #sidebar { width: 0; min-width: 0; }
+body.sidebar-collapsed #sidebar-collapse-btn { left: 0px; }
+
+/* ── Arrow canvas overlay ── */
+#arrow-canvas {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  pointer-events: none; z-index: 15;
+}
+body.arrow-mode #arrow-canvas { pointer-events: all; cursor: crosshair; }
+
+/* ── Arrow toolbar (shown in arrow mode) ── */
+#arrow-toolbar {
+  position: absolute; top: 100px; left: 50%; transform: translateX(-50%);
+  display: none; gap: 6px; align-items: center;
+  background: var(--glass); padding: 5px 8px;
+  border-radius: var(--radius-pill); border: 1px solid rgba(255,255,255,0.1);
+  backdrop-filter: blur(24px) saturate(180%); z-index: 22;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+}
+body.arrow-mode #arrow-toolbar { display: flex; }
+.arrow-color-btn {
+  width: 24px; height: 24px; border-radius: 50%; border: 2px solid transparent;
+  cursor: pointer; transition: transform 0.1s, border-color 0.1s;
+}
+.arrow-color-btn:hover { transform: scale(1.15); }
+.arrow-color-btn.on { border-color: #fff; }
+.arrow-size-btn {
+  padding: 3px 10px; background: transparent; border: none;
+  border-radius: var(--radius-pill); color: var(--text2);
+  font-family: var(--font); font-size: 12px; font-weight: 500;
+  cursor: pointer; transition: background 0.12s, color 0.12s;
+}
+.arrow-size-btn:hover { background: rgba(255,255,255,0.08); color: var(--text); }
+.arrow-size-btn.on { background: var(--blue); color: #fff; }
+
+/* ── FPS mode overlay ── */
+#walk-banner {
+  position: absolute; top: 100px; left: 50%; transform: translateX(-50%);
+  background: rgba(255,159,10,0.15); border: 1px solid rgba(255,159,10,0.5);
+  padding: 5px 16px; border-radius: var(--radius-pill);
+  font-family: var(--font); font-size: 12px; font-weight: 500;
+  color: #ff9f0a; backdrop-filter: blur(16px); z-index: 20;
+  display: none; white-space: nowrap; pointer-events: none;
+}
+body.walk-mode #walk-banner { display: block; }
+body.walk-mode #three-canvas { cursor: none; }
+
+/* ── FPS crosshair ── */
+#fps-crosshair {
+  display: none;
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 24px; height: 24px;
+  pointer-events: none;
+  z-index: 25;
+}
+#fps-crosshair::before,
+#fps-crosshair::after {
+  content: '';
+  position: absolute;
+  background: rgba(255,255,255,0.9);
+  border-radius: 1px;
+  box-shadow: 0 0 3px rgba(0,0,0,0.8);
+}
+#fps-crosshair::before { width: 12px; height: 2px; top: 11px; left: 6px; }
+#fps-crosshair::after  { width: 2px; height: 12px; top: 6px; left: 11px; }
+/* centre dot */
+#fps-crosshair-dot {
+  display: none;
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.9);
+  box-shadow: 0 0 3px rgba(0,0,0,0.8);
+  pointer-events: none;
+  z-index: 26;
+}
+body.walk-mode #fps-crosshair,
+body.walk-mode #fps-crosshair-dot { display: block; }
+
+/* ── Toast notification ── */
+#toast {
+  position: fixed; bottom: 60px; left: 50%; transform: translateX(-50%);
+  background: var(--bg2); border: 1px solid rgba(255,255,255,0.12);
+  padding: 7px 18px; border-radius: var(--radius-pill);
+  font-family: var(--font); font-size: 12px; font-weight: 500;
+  color: var(--text); z-index: 300; pointer-events: none;
+  opacity: 0; transition: opacity 0.2s;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+}
+#toast.show { opacity: 1; }
+
+/* ── Box select overlay ── */
+#box-select {
+  position: absolute; border: 1px solid var(--blue);
+  background: rgba(10,132,255,0.1); display: none;
+  pointer-events: none; z-index: 25;
+}
+
+/* ── Context menu ── */
+#ctx-menu {
+  position: fixed; display: none; z-index: 200;
+  background: var(--bg1); border: 1px solid var(--separator);
+  border-radius: var(--radius-md); padding: 4px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+  min-width: 160px;
+}
+#ctx-menu.open { display: block; }
+.ctx-item {
+  padding: 7px 14px; border-radius: var(--radius-sm);
+  font-size: 13px; font-weight: 500; color: var(--text2);
+  cursor: pointer; transition: background 0.1s;
+}
+.ctx-item:hover { background: var(--bg2); color: var(--text); }
+.ctx-item.danger:hover { background: rgba(255,59,48,0.15); color: #ff453a; }
+.ctx-sep { height: 1px; background: var(--separator); margin: 3px 0; }
+
+/* ── Arrow type buttons ── */
+.arrow-type-btn {
+  padding: 3px 10px; background: transparent; border: none;
+  border-radius: var(--radius-pill); color: var(--text2);
+  font-family: var(--font); font-size: 12px; font-weight: 500;
+  cursor: pointer; transition: background 0.12s, color 0.12s;
+}
+.arrow-type-btn:hover { background: rgba(255,255,255,0.08); color: var(--text); }
+.arrow-type-btn.on { background: var(--blue); color: #fff; }
+
+/* ── Units ruler label ── */
+.ruler-label {
+  position: absolute; font-family: var(--font);
+  font-size: 10px; color: rgba(255,255,255,0.5);
+  pointer-events: none; transform: translate(-50%,-50%);
+}
+
+/* ── Slot buttons ── */
+.slot-row { display: flex; gap: 4px; margin-top: 8px; }
+.slot-btn {
+  flex: 1; padding: 5px 4px; background: var(--bg2);
+  border: 1px solid rgba(255,255,255,0.07); border-radius: var(--radius-sm);
+  color: var(--text3); font-family: var(--font); font-size: 10px; font-weight: 500;
+  cursor: pointer; text-align: center; transition: all 0.12s; line-height: 1.3;
+}
+.slot-btn:hover { background: var(--bg3); color: var(--text); }
+.slot-btn.filled { border-color: rgba(10,132,255,0.3); color: var(--text2); }
+.slot-btn.active { border-color: var(--blue); color: var(--blue); background: var(--blue-tint); }
+.slot-actions { display: flex; gap: 4px; margin-top: 4px; }
+.slot-action-btn {
+  flex: 1; padding: 5px 8px; background: var(--bg2);
+  border: 1px solid rgba(255,255,255,0.07); border-radius: var(--radius-sm);
+  color: var(--text2); font-family: var(--font); font-size: 11px; font-weight: 500;
+  cursor: pointer; transition: all 0.12s; text-align: center;
+}
+.slot-action-btn:hover { background: var(--bg3); color: var(--text); }
+.slot-action-btn.save-btn:hover { background: rgba(10,132,255,0.15); border-color: rgba(10,132,255,0.4); color: var(--blue); }
+
+/* ── Field dimension inputs ── */
+.dim-row { display: flex; gap: 6px; margin-top: 8px; }
+.dim-field { flex: 1; }
+.dim-label {
+  font-size: 10px; font-weight: 500; color: var(--text3);
+  text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 3px;
+}
+.dim-input {
+  width: 100%; background: var(--bg2); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: var(--radius-sm); color: var(--text);
+  font-family: var(--font); font-size: 13px; font-weight: 500;
+  padding: 6px 8px; outline: none; transition: border-color 0.15s;
+}
+.dim-input:focus { border-color: var(--blue); }
+
+/* ── Release Notes button (near app title) ── */
+#btn-release-notes {
+  display: inline-flex; align-items: center; gap: 4px;
+  margin-top: 5px;
+  background: none; border: 1px solid rgba(255,255,255,0.12);
+  border-radius: var(--radius-pill);
+  color: var(--text3); font-family: var(--font);
+  font-size: 10px; font-weight: 500; letter-spacing: 0.1px;
+  padding: 3px 9px; cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+#btn-release-notes:hover {
+  border-color: rgba(10,132,255,0.5);
+  color: var(--blue);
+  background: var(--blue-tint);
+}
+#btn-controls {
+  display: inline-flex; align-items: center; gap: 4px;
+  margin-top: 5px;
+  background: none; border: 1px solid rgba(255,255,255,0.12);
+  border-radius: var(--radius-pill);
+  color: var(--text3); font-family: var(--font);
+  font-size: 10px; font-weight: 500; letter-spacing: 0.1px;
+  padding: 3px 9px; cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+#btn-controls:hover {
+  border-color: rgba(10,132,255,0.5);
+  color: var(--blue);
+  background: var(--blue-tint);
+}
+
+/* ── Release notes modal ── */
+#relnotes-modal, #controls-modal {
+  display: none; position: fixed; inset: 0; z-index: 300;
+  align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.7); backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+#relnotes-modal.open, #controls-modal.open { display: flex; }
+.relnotes-box {
+  background: var(--bg1); border: 1px solid var(--separator);
+  border-radius: var(--radius-lg); padding: 0;
+  width: min(560px, 92vw); max-height: 80vh;
+  display: flex; flex-direction: column;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.8);
+  overflow: hidden;
+}
+.relnotes-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 22px 14px; border-bottom: 1px solid var(--separator);
+  flex-shrink: 0;
+}
+.relnotes-header h2 {
+  font-size: 16px; font-weight: 700; color: var(--text); letter-spacing: -0.3px;
+}
+.relnotes-close {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--bg3); border: none;
+  color: var(--text2); font-size: 16px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.12s;
+}
+.relnotes-close:hover { background: rgba(255,255,255,0.15); color: var(--text); }
+.relnotes-body {
+  overflow-y: auto; padding: 18px 22px 22px; flex: 1;
+}
+.relnotes-body::-webkit-scrollbar { width: 4px; }
+.relnotes-body::-webkit-scrollbar-track { background: transparent; }
+.relnotes-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 2px; }
+.rn-version {
+  margin-bottom: 22px;
+}
+.rn-version:last-child { margin-bottom: 0; }
+.rn-tag {
+  display: inline-flex; align-items: center; gap: 6px;
+  margin-bottom: 8px;
+}
+.rn-version-num {
+  font-size: 13px; font-weight: 700; color: var(--text); letter-spacing: -0.2px;
+}
+.rn-date {
+  font-size: 11px; color: var(--text3); font-weight: 400;
+}
+.rn-badge {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.05em;
+  text-transform: uppercase; padding: 2px 7px;
+  border-radius: var(--radius-pill);
+}
+.rn-badge.latest { background: rgba(10,132,255,0.2); color: var(--blue); border: 1px solid rgba(10,132,255,0.35); }
+.rn-badge.roadmap { background: rgba(255,159,10,0.15); color: #ff9f0a; border: 1px solid rgba(255,159,10,0.35); }
+.rn-items { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 5px; }
+.rn-items li {
+  font-size: 13px; color: var(--text2); line-height: 1.45;
+  padding-left: 14px; position: relative;
+}
+.rn-items li::before {
+  content: '·'; position: absolute; left: 0; color: var(--text3); font-size: 16px; line-height: 1.2;
+}
+.rn-items li strong { color: var(--text); font-weight: 600; }
+.rn-divider {
+  border: none; border-top: 1px solid var(--separator); margin: 18px 0;
+}
+
+/* ── Rename modal ── */
+#rename-modal {
+  display: none; position: fixed; inset: 0; z-index: 200;
+  align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.6); backdrop-filter: blur(8px);
+}
+#rename-modal.open { display: flex; }
+.rename-box {
+  background: var(--bg1); border: 1px solid var(--separator);
+  border-radius: var(--radius-lg); padding: 24px 24px 20px;
+  min-width: 280px; box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+}
+.rename-box h3 {
+  font-size: 16px; font-weight: 600; margin-bottom: 14px; color: var(--text);
+}
+.rename-box input {
+  width: 100%; background: var(--bg2); border: 1px solid rgba(255,255,255,0.12);
+  border-radius: var(--radius-sm); color: var(--text);
+  font-family: var(--font); font-size: 15px; padding: 9px 12px;
+  outline: none; transition: border-color 0.15s;
+}
+.rename-box input:focus { border-color: var(--blue); }
+.rename-actions { display: flex; gap: 8px; margin-top: 14px; justify-content: flex-end; }
+.rename-btn {
+  padding: 7px 18px; border-radius: var(--radius-pill);
+  font-family: var(--font); font-size: 13px; font-weight: 500;
+  cursor: pointer; border: none; transition: opacity 0.12s;
+}
+.rename-btn.cancel { background: var(--bg3); color: var(--text2); }
+.rename-btn.confirm { background: var(--blue); color: #fff; }
+
+/* ── Placement mode banner ── */
+#place-banner {
+  position: absolute; top: 100px; left: 50%; transform: translateX(-50%);
+  background: var(--blue-tint); border: 1px solid rgba(10,132,255,0.4);
+  padding: 6px 18px; border-radius: var(--radius-pill);
+  font-family: var(--font); font-size: 12px; font-weight: 500;
+  color: var(--blue); backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  z-index: 20; display: none; white-space: nowrap;
+  pointer-events: none;
+}
+
+/* ── Mobile sidebar toggle ── */
+#sidebar-toggle {
+  display: none;
+  position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+  z-index: 110;
+  background: var(--glass); border: 1px solid rgba(255,255,255,0.15);
+  border-radius: var(--radius-pill); padding: 10px 22px;
+  color: var(--text); font-family: var(--font);
+  font-size: 14px; font-weight: 600;
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5), 0 1px 0 rgba(255,255,255,0.08) inset;
+  cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent;
+  gap: 8px; align-items: center;
+}
+
+/* ── Sidebar drawer handle (mobile) ── */
+.drawer-handle {
+  display: none; width: 36px; height: 4px;
+  background: rgba(255,255,255,0.25); border-radius: 2px;
+  margin: 10px auto 0; flex-shrink: 0;
+}
+
+/* ── Mobile card "armed" state ── */
+.bunker-card.armed {
+  border-color: var(--blue) !important;
+  background: var(--blue-tint) !important;
+}
+
+/* ════════════════════════════════════════════════
+   RESPONSIVE — mobile (≤ 640px)
+   ════════════════════════════════════════════════ */
+@media (max-width: 640px) {
+  /* Sidebar becomes a bottom sheet */
+  #sidebar {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    width: 100%; min-width: unset;
+    height: 62vh;
+    border-right: none;
+    border-top: 1px solid var(--separator);
+    border-radius: 16px 16px 0 0;
+    transform: translateY(100%);
+    transition: transform 0.38s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    z-index: 100;
+    background: rgba(28,28,30,0.96);
+    backdrop-filter: blur(32px) saturate(180%);
+    -webkit-backdrop-filter: blur(32px) saturate(180%);
+  }
+  body.sidebar-open #sidebar { transform: translateY(0); }
+
+  /* Draw handle visible on mobile */
+  .drawer-handle { display: block; }
+
+  /* Sidebar header adjustment */
+  #sidebar-header { padding: 12px 16px 10px; border-bottom: 1px solid var(--separator); }
+
+  /* Bunker list — horizontal scroll on mobile */
+  .bunker-list-scroll {
+    display: flex; flex-direction: row; flex-wrap: nowrap;
+    overflow-x: auto; gap: 8px; padding: 8px 12px 12px;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+  }
+  .bunker-list-scroll::-webkit-scrollbar { display: none; }
+
+  .bunker-section { padding: 0; }
+  .section-label { padding: 8px 12px 2px; }
+
+  .bunker-card {
+    min-width: 130px; flex-direction: column; align-items: flex-start;
+    padding: 10px; border-radius: var(--radius-md);
+    scroll-snap-align: start;
+  }
+  .bunker-icon { width: 40px; height: 40px; border-radius: 9px; margin-bottom: 6px; }
+  .bunker-name { font-size: 13px; }
+  .bunker-desc { font-size: 11px; }
+
+  /* Toolbar — each row independently horizontally scrollable */
+  #toolbar-wrap {
+    padding: 6px 0 0;
+    pointer-events: all;
+    /* Right-fade tells the user more buttons exist off-screen */
+    -webkit-mask-image: linear-gradient(to right, black 80%, transparent 100%);
+            mask-image: linear-gradient(to right, black 80%, transparent 100%);
+  }
+  .tb-row {
+    overflow-x: scroll; overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+    scrollbar-width: none;
+    padding: 0 40px 3px 6px; /* right padding keeps last button clear of fade */
+    pointer-events: all;
+  }
+  .tb-row::-webkit-scrollbar { display: none; }
+  /* Compact buttons — more fit without clipping */
+  .tbtn { padding: 6px 10px; font-size: 11px; flex-shrink: 0; }
+  .tb-group { gap: 0; }
+  .tbtn-sep { margin: 0 1px; }
+  /* Hide desktop-only collapse tab — mobile uses the drawer handle */
+  #sidebar-collapse-btn { display: none !important; }
+
+  /* Right panel — anchor above toggle button */
+  #right-panel { top: auto; bottom: 86px; right: 14px; }
+  .rpbtn { font-size: 12px; padding: 8px 14px; }
+
+  /* Info bar hidden (no keyboard hints on mobile) */
+  #info-bar { display: none; }
+
+  /* Place banner shifted down */
+  #place-banner { top: 68px; }
+
+  /* Toggle button visible */
+  #sidebar-toggle { display: flex; }
+
+  /* Selected info above the toggle */
+  #selected-info { bottom: 76px; }
+
+  /* Canvas wrap covers full screen */
+  #canvas-wrap { width: 100%; height: 100%; }
+}
+</style>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+
+<div id="sidebar"></div>
+
+<div id="canvas-wrap">
+  <canvas id="three-canvas"></canvas>
+  <canvas id="arrow-canvas"></canvas>
+  <div id="place-banner"></div>
+  <div id="walk-banner">FPS Mode — Move mouse to look · WASD=move · Shift=sprint · C=crouch · Z=crawl · Space=jump · Click=shoot · F or Esc=exit</div>
+  <div id="fps-crosshair"></div>
+  <div id="fps-crosshair-dot"></div>
+
+  <!-- Arrow mode sub-toolbar -->
+  <div id="arrow-toolbar">
+    <button class="arrow-type-btn on" data-type="move">↗ Move</button>
+    <button class="arrow-type-btn" data-type="shoot">💥 Shot</button>
+    <div style="width:1px;height:16px;background:var(--separator);margin:0 2px"></div>
+    <div class="arrow-color-btn on" data-color="#ff453a" style="background:#ff453a" title="Red"></div>
+    <div class="arrow-color-btn" data-color="#0a84ff" style="background:#0a84ff" title="Blue"></div>
+    <div class="arrow-color-btn" data-color="#ffd60a" style="background:#ffd60a" title="Yellow"></div>
+    <div class="arrow-color-btn" data-color="#39ff14" style="background:#39ff14" title="Neon Green"></div>
+    <div class="arrow-color-btn" data-color="#30d158" style="background:#30d158" title="Green"></div>
+    <div class="arrow-color-btn" data-color="#ffffff" style="background:#ffffff" title="White"></div>
+    <div style="width:1px;height:16px;background:var(--separator);margin:0 2px"></div>
+    <button class="arrow-size-btn on" data-size="3">Thin</button>
+    <button class="arrow-size-btn" data-size="6">Medium</button>
+    <button class="arrow-size-btn" data-size="10">Thick</button>
+    <div style="width:1px;height:16px;background:var(--separator);margin:0 2px"></div>
+    <button class="tbtn danger" id="btn-clear-arrows" style="padding:4px 10px;font-size:12px">Clear Arrows</button>
+  </div>
+
+  <!-- ── Toolbar: two grouped rows ── -->
+  <div id="toolbar-wrap">
+    <!-- Row 1: Mode · Transforms · Delete · Camera -->
+    <div class="tb-row">
+      <div class="tb-group">
+        <button class="tbtn mode-btn on" id="btn-mode-select">Select</button>
+        <button class="tbtn mode-btn" id="btn-mode-player">Player</button>
+        <button class="tbtn mode-btn" id="btn-mode-arrow">Arrow</button>
+      </div>
+      <div class="tb-group">
+        <button class="tbtn" id="btn-rcw">↻ CW</button>
+        <button class="tbtn" id="btn-rccw">↺ CCW</button>
+      </div>
+      <div class="tb-group">
+        <button class="tbtn danger" id="btn-del">Delete</button>
+        <button class="tbtn danger" id="btn-clear">Clear All</button>
+      </div>
+      <div class="tb-group">
+        <button class="tbtn" id="btn-top">Top</button>
+        <button class="tbtn" id="btn-3d">3D</button>
+        <button class="tbtn" id="btn-walk">FPS</button>
+      </div>
+    </div>
+    <!-- Row 2: Snap · Mirror · Labels · Undo/Redo · Screenshot · Export/Import -->
+    <div class="tb-row">
+      <div class="tb-group">
+        <button class="tbtn on" id="btn-snap">Snap: ON</button>
+        <button class="tbtn" id="btn-mirror">Mirror: OFF</button>
+      </div>
+      <div class="tb-group">
+        <button class="tbtn" id="btn-labels">Labels: OFF</button>
+        <button class="tbtn" id="btn-units">Units: OFF</button>
+        <button class="tbtn" id="btn-bunkers-black">Bunkers: CLR</button>
+      </div>
+      <div class="tb-group">
+        <button class="tbtn" id="btn-undo">↩ Undo</button>
+        <button class="tbtn" id="btn-redo">↪ Redo</button>
+      </div>
+      <div class="tb-group">
+        <button class="tbtn" id="btn-screenshot">Screenshot</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- keep right-panel in DOM (JS refs it) but CSS hides it -->
+  <div id="right-panel" style="display:none">
+    <div class="rpbtn" id="btn-snap-rp">Snap: ON</div>
+    <div class="rpbtn" id="btn-mirror-rp">Mirror: OFF</div>
+  </div>
+
+  <!-- Player mode panel -->
+  <div id="player-panel">
+    <div class="pp-label">Team</div>
+    <div class="pp-row" style="flex-wrap:wrap;gap:4px">
+      <button class="team-btn on" data-team="red"         style="color:#ff3b30">Red</button>
+      <button class="team-btn"    data-team="blue"        style="color:#0a84ff">Blue</button>
+      <button class="team-btn"    data-team="murder_inc"  style="color:#c9a227">Murder Inc</button>
+      <button class="team-btn"    data-team="carpinteros" style="color:#00a86b">Carpinteros</button>
+      <button class="team-btn"    data-team="1s1k"        style="color:#929292">1S1K</button>
+      <button class="team-btn"    data-team="kaiju"       style="color:#29b6f6">Kaiju</button>
+    </div>
+    <div class="pp-label" style="margin-top:6px">Weapon</div>
+    <div class="pp-row">
+      <button class="weapon-btn on" data-weapon="R">Rifle</button>
+      <button class="weapon-btn"    data-weapon="SG">Shotgun</button>
+      <button class="weapon-btn"    data-weapon="P">Pistol</button>
+    </div>
+  </div>
+
+  <div id="selected-info"></div>
+  <div id="info-bar">🖥 PC — Right-click: orbit &nbsp;|&nbsp; Scroll: zoom &nbsp;|&nbsp; Middle: pan &nbsp;|&nbsp; WASD: fly &nbsp;|&nbsp; Space ↑ / Shift ↓: altitude &nbsp;|&nbsp; R/E: rotate &nbsp;|&nbsp; Del: remove &nbsp;|&nbsp; F: FPS mode</div>
+  <div id="box-select"></div>
+  <div id="ctx-menu">
+    <div class="ctx-item" id="ctx-rename">Rename</div>
+    <div class="ctx-item" id="ctx-duplicate">Duplicate</div>
+    <div id="ctx-stance-group" style="display:none">
+      <div class="ctx-sep"></div>
+      <div class="ctx-item" id="ctx-stance-stand">▲ Standing</div>
+      <div class="ctx-item" id="ctx-stance-crouch">◆ Crouching</div>
+      <div class="ctx-item" id="ctx-stance-crawl">▬ Crawling</div>
+    </div>
+    <div class="ctx-sep"></div>
+    <div class="ctx-item danger" id="ctx-delete">Delete</div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<button id="sidebar-toggle">
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+    <rect x="2" y="4" width="12" height="1.5" rx="0.75" fill="currentColor"/>
+    <rect x="2" y="7.25" width="12" height="1.5" rx="0.75" fill="currentColor"/>
+    <rect x="2" y="10.5" width="12" height="1.5" rx="0.75" fill="currentColor"/>
+  </svg>
+  Bunkers
+</button>
+<div id="drag-ghost"></div>
+
+<!-- Release notes / roadmap modal -->
+<div id="relnotes-modal">
+  <div class="relnotes-box">
+    <div class="relnotes-header">
+      <h2>📋 Release Notes &amp; Roadmap</h2>
+      <button class="relnotes-close" id="relnotes-close" title="Close">✕</button>
+    </div>
+    <div class="relnotes-body" id="relnotes-body">
+      <!-- Populated by JS -->
+    </div>
+  </div>
+</div>
+
+<!-- Controls & Tips modal -->
+<div id="controls-modal">
+  <div class="relnotes-box">
+    <div class="relnotes-header">
+      <h2>🎮 Controls &amp; Tips</h2>
+      <button class="relnotes-close" id="controls-close" title="Close">✕</button>
+    </div>
+    <div class="relnotes-body" id="controls-body">
+      <div style="margin-bottom:16px">
+        <div style="font-size:13px;font-weight:700;color:var(--text1);margin-bottom:8px">🖥 PC — Best Experience</div>
+        <table style="width:100%;border-collapse:collapse;font-size:12px;color:var(--text2)">
+          <tr><td style="padding:3px 8px 3px 0;color:var(--text3);white-space:nowrap">WASD / Arrows</td><td>Pan camera</td></tr>
+          <tr><td style="padding:3px 8px 3px 0;color:var(--text3);white-space:nowrap">Space / Shift</td><td>Fly up / Fly down</td></tr>
+          <tr><td style="padding:3px 8px 3px 0;color:var(--text3);white-space:nowrap">Right-click drag</td><td>Orbit camera</td></tr>
+          <tr><td style="padding:3px 8px 3px 0;color:var(--text3);white-space:nowrap">Scroll wheel</td><td>Zoom in / out</td></tr>
+          <tr><td style="padding:3px 8px 3px 0;color:var(--text3);white-space:nowrap">R / E keys</td><td>Rotate selected bunker/player CW / CCW</td></tr>
+          <tr><td style="padding:3px 8px 3px 0;color:var(--text3);white-space:nowrap">F key</td><td>FPS first-person mode</td></tr>
+          <tr><td style="padding:3px 8px 3px 0;color:var(--text3);white-space:nowrap">Drag empty space</td><td>Box-select multiple bunkers</td></tr>
+          <tr><td style="padding:3px 8px 3px 0;color:var(--text3);white-space:nowrap">Right-click bunker</td><td>Context menu (rename, duplicate, delete)</td></tr>
+        </table>
+      </div>
+      <div style="border-top:1px solid var(--separator);padding-top:14px">
+        <div style="font-size:13px;font-weight:700;color:var(--text1);margin-bottom:8px">📱 Phone / Tablet — Limited</div>
+        <table style="width:100%;border-collapse:collapse;font-size:12px;color:var(--text2)">
+          <tr><td style="padding:3px 8px 3px 0;color:var(--text3);white-space:nowrap">Pinch / swipe</td><td>Orbit &amp; zoom camera</td></tr>
+          <tr><td style="padding:3px 8px 3px 0;color:var(--text3);white-space:nowrap">Tap bunker</td><td>Select</td></tr>
+          <tr><td style="padding:3px 8px 3px 0;color:var(--text3);white-space:nowrap">Drag bunker</td><td>Move bunker</td></tr>
+          <tr><td style="padding:3px 8px 3px 0;color:var(--text3);white-space:nowrap">Long-press bunker</td><td>Context menu (rename, duplicate, delete)</td></tr>
+          <tr><td style="padding:3px 8px 3px 0;color:var(--text3);white-space:nowrap;color:#ef4444">✗ FPS mode</td><td style="color:#ef4444">Requires mouse + pointer lock</td></tr>
+          <tr><td style="padding:3px 8px 3px 0;color:var(--text3);white-space:nowrap;color:#ef4444">✗ Box-select</td><td style="color:#ef4444">Mouse drag only</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Rename bunker instance modal -->
+<div id="rename-modal">
+  <div class="rename-box">
+    <h3>Rename Bunker</h3>
+    <div class="rename-type-hint" style="font-size:11px;color:var(--text2);margin-bottom:8px">Only this placed bunker is renamed — the sidebar name stays the same.</div>
+    <input id="rename-input" type="text" maxlength="40" placeholder="Enter new name…" autocomplete="off"/>
+    <div class="rename-actions">
+      <button class="rename-btn cancel" id="rename-cancel">Cancel</button>
+      <button class="rename-btn confirm" id="rename-confirm">Rename</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FIELD DEFINITIONS  (placeholder bunkers — real data coming later)
+// ─────────────────────────────────────────────────────────────────────────────
+
+const FIELD_DEFS = {
+  project_n1: {
+    label: 'Project N1',
+    width: 50, length: 100,   // ft — placeholder until measured
+    bunkers: [
+      { id: 'can',        label: 'Can',        desc: 'Medium cylinder', color: '#10b981', cat: 'Cylinders' },
+      { id: 'fatboy',     label: 'Fatboy',     desc: 'Large cylinder',  color: '#ef4444', cat: 'Cylinders' },
+      { id: 'cake',       label: 'Cake',       desc: 'Wide flat disk',  color: '#ec4899', cat: 'Cylinders' },
+      { id: 'dorito',     label: 'Dorito',     desc: 'Triangle prism',  color: '#f59e0b', cat: 'Triangles' },
+      { id: 'mini_dorito',label: 'Mini Dorito',desc: 'Small triangle',  color: '#fbbf24', cat: 'Triangles' },
+      { id: 'brick',      label: 'Brick',      desc: 'Wide low wall',   color: '#8b5cf6', cat: 'Rectangles' },
+      { id: 'tombstone',  label: 'Tombstone',  desc: 'Tall thin wall',  color: '#06b6d4', cat: 'Rectangles' },
+      { id: 'sup_air',    label: "Sup'Air",    desc: 'Tall wide wall',  color: '#3b82f6', cat: 'Rectangles' },
+      { id: 'snake',      label: 'Snake',      desc: 'Full S-shape',    color: '#6366f1', cat: 'Snakes' },
+      { id: 'mini_snake', label: 'Mini Snake', desc: 'Half S-shape',    color: '#818cf8', cat: 'Snakes' },
+      { id: 'tck',        label: 'TCK',        desc: 'T-shape bunker',  color: '#f97316', cat: 'Complex' },
+      { id: 'corner',     label: 'Corner',     desc: 'L-shape corner',  color: '#84cc16', cat: 'Complex' },
+      { id: 'x_bunker',   label: 'X-Bunker',  desc: 'Cross shape',     color: '#a78bfa', cat: 'Complex' },
+    ]
+  },
+  tac_city: {
+    label: 'Tac City Airsoft',
+    width: 50, length: 100,   // ft — placeholder until measured
+    bunkers: [
+      { id: 'can',        label: 'Can',        desc: 'Medium cylinder', color: '#10b981', cat: 'Cylinders' },
+      { id: 'fatboy',     label: 'Fatboy',     desc: 'Large cylinder',  color: '#ef4444', cat: 'Cylinders' },
+      { id: 'dorito',     label: 'Dorito',     desc: 'Triangle prism',  color: '#f59e0b', cat: 'Triangles' },
+      { id: 'brick',      label: 'Brick',      desc: 'Wide low wall',   color: '#8b5cf6', cat: 'Rectangles' },
+      { id: 'tombstone',  label: 'Tombstone',  desc: 'Tall thin wall',  color: '#06b6d4', cat: 'Rectangles' },
+      { id: 'sup_air',    label: "Sup'Air",    desc: 'Tall wide wall',  color: '#3b82f6', cat: 'Rectangles' },
+      { id: 'snake',      label: 'Snake',      desc: 'Full S-shape',    color: '#6366f1', cat: 'Snakes' },
+      { id: 'tck',        label: 'TCK',        desc: 'T-shape bunker',  color: '#f97316', cat: 'Complex' },
+      { id: 'corner',     label: 'Corner',     desc: 'L-shape corner',  color: '#84cc16', cat: 'Complex' },
+    ]
+  }
+};
+
+let activeFieldId = 'project_n1';
+function activeField() { return FIELD_DEFS[activeFieldId]; }
+function BUNKERS() { return activeField().bunkers; }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SCENE SETUP
+// ─────────────────────────────────────────────────────────────────────────────
+
+const wrap   = document.getElementById('canvas-wrap');
+const canvas = document.getElementById('three-canvas');
+
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+// Environment colours — persisted in localStorage, defaults: black space, grey ground
+let envSpaceColor  = localStorage.getItem('speedlayout_space_color')  || '#000000';
+let envGroundColor = localStorage.getItem('speedlayout_ground_color') || '#c8c8c8';
+let turfMat  = null;
+let apronMat = null;
+
+renderer.setClearColor(parseInt(envSpaceColor.replace('#',''), 16));
+
+function applyEnvColors() {
+  renderer.setClearColor(parseInt(envSpaceColor.replace('#',''), 16));
+  if (turfMat)  turfMat.color.set(envGroundColor);
+  if (apronMat) apronMat.color.set(new THREE.Color(envGroundColor).multiplyScalar(0.85));
+  // Update grid colour to stay readable against the new ground
+  // (grid is recreated by buildField — handled there)
+}
+
+const scene  = new THREE.Scene();
+
+const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 500);
+camera.position.set(0, 45, 60);
+camera.lookAt(0, 0, 0);
+
+function resize() {
+  const w = wrap.clientWidth, h = wrap.clientHeight;
+  if (!w || !h) return;   // skip if layout hasn't settled yet
+  renderer.setSize(w, h);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+resize();
+requestAnimationFrame(resize);   // re-run after first layout paint
+window.addEventListener('resize', resize);
+
+// Lights
+scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+
+const sun = new THREE.DirectionalLight(0xfff5e0, 1.3);
+sun.position.set(25, 60, 35);
+scene.add(sun);
+
+const fill = new THREE.DirectionalLight(0x8899ff, 0.25);
+fill.position.set(-20, 15, -25);
+scene.add(fill);
+
+// OrbitControls — right-click/middle on desktop; single/two-finger on touch
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.mouseButtons = { LEFT: null, MIDDLE: THREE.MOUSE.PAN, RIGHT: THREE.MOUSE.ROTATE };
+controls.touches = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN };
+controls.enableDamping = true;
+controls.dampingFactor = 0.07;
+controls.maxPolarAngle = Math.PI / 2.1;
+controls.minDistance = 8;
+controls.maxDistance = 130;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FIELD GEOMETRY  (rebuilt when field changes)
+// ─────────────────────────────────────────────────────────────────────────────
+
+let FW = activeField().width;
+let FH = activeField().length;
+let hw = FW / 2, hh = FH / 2;
+
+const fieldObjects = [];  // all field geometry — cleared on field switch
+
+function line(pts, col = 0xffffff) {
+  const g = new THREE.BufferGeometry().setFromPoints(pts);
+  return new THREE.Line(g, new THREE.LineBasicMaterial({ color: col }));
+}
+
+function buildField() {
+  // Remove old field objects
+  fieldObjects.forEach(o => scene.remove(o));
+  fieldObjects.length = 0;
+
+  FW = activeField().width;
+  FH = activeField().length;
+  hw = FW / 2;
+  hh = FH / 2;
+
+  // Floor — driven by envGroundColor picker
+  turfMat = new THREE.MeshLambertMaterial({ color: new THREE.Color(envGroundColor) });
+  const turf = new THREE.Mesh(new THREE.PlaneGeometry(FW, FH), turfMat);
+  turf.rotation.x = -Math.PI / 2;
+  turf.name = 'ground';
+  scene.add(turf);
+  fieldObjects.push(turf);
+
+  // Outer apron — slightly darker grey surrounding the field
+  apronMat = new THREE.MeshLambertMaterial({ color: new THREE.Color(envGroundColor).multiplyScalar(0.85) });
+  const apron = new THREE.Mesh(new THREE.PlaneGeometry(FW + 30, FH + 30), apronMat);
+  apron.rotation.x = -Math.PI / 2;
+  apron.position.y = -0.02;
+  scene.add(apron);
+  fieldObjects.push(apron);
+
+  // Grid lines — slightly darker than the ground so they're always visible
+  const gridCol = new THREE.Color(envGroundColor).multiplyScalar(0.7);
+  const grid = new THREE.GridHelper(FH, Math.floor(FH / 5), gridCol, gridCol);
+  grid.position.y = 0.03;
+  grid.scale.x = FW / FH;
+  scene.add(grid);
+  fieldObjects.push(grid);
+
+
+  const y = 0.06;
+  const boundary = line([
+    new THREE.Vector3(-hw, y, -hh), new THREE.Vector3(hw, y, -hh),
+    new THREE.Vector3(hw, y,  hh), new THREE.Vector3(-hw, y,  hh),
+    new THREE.Vector3(-hw, y, -hh)
+  ], 0xffffff);
+  scene.add(boundary);
+  fieldObjects.push(boundary);
+
+  const center = line([new THREE.Vector3(-hw, y, 0), new THREE.Vector3(hw, y, 0)], 0xff0000);
+  scene.add(center);
+  fieldObjects.push(center);
+
+  const zone1 = line([new THREE.Vector3(-hw, y, -hh * 0.4), new THREE.Vector3(hw, y, -hh * 0.4)], 0x555555);
+  const zone2 = line([new THREE.Vector3(-hw, y,  hh * 0.4), new THREE.Vector3(hw, y,  hh * 0.4)], 0x555555);
+  scene.add(zone1); scene.add(zone2);
+  fieldObjects.push(zone1, zone2);
+
+  [[-1,-1],[1,-1],[1,1],[-1,1]].forEach(([sx,sz]) => {
+    const pole = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.2, 0.2, 2.5, 6),
+      new THREE.MeshLambertMaterial({ color: 0xff0000 })
+    );
+    pole.position.set(sx * hw, 1.25, sz * hh);
+    scene.add(pole);
+    fieldObjects.push(pole);
+  });
+}
+
+buildField();
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BUNKER FACTORIES
+// ─────────────────────────────────────────────────────────────────────────────
+
+function hex3(str) { return parseInt(str.replace('#', ''), 16); }
+
+let bunkersBlack = false; // toggled by "Bunkers: BLK" toolbar button
+
+function mat(col) {
+  return new THREE.MeshLambertMaterial({ color: bunkersBlack ? 0x141414 : hex3(col) });
+}
+
+// Recolour all placed bunkers to reflect the current bunkersBlack state.
+// Only touches meshes that belong to bunker geometry (userData.root is set).
+function applyBunkerColors() {
+  placed.forEach(g => {
+    const col = bunkersBlack ? 0x141414 : hex3(g.userData.bunker.color);
+    g.traverse(c => {
+      if (c.isMesh && c.userData.root && c.material?.color) {
+        c.material.color.setHex(col);
+        // Keep any stored emissive base in sync so highlights still work
+        if (c.userData._em !== undefined) c.userData._em = c.material.emissive?.getHex() ?? 0;
+      }
+    });
+  });
+}
+
+function mesh(geo, col) {
+  return new THREE.Mesh(geo, mat(col));
+}
+
+function group(...children) {
+  const g = new THREE.Group();
+  children.forEach(c => g.add(c));
+  return g;
+}
+
+// -- Cylinders
+function mkCan(col) {
+  const m = mesh(new THREE.CylinderGeometry(1.4, 1.4, 4, 18), col);
+  m.position.y = 2;
+  return group(m);
+}
+
+function mkFatboy(col) {
+  const m = mesh(new THREE.CylinderGeometry(2.8, 2.8, 4, 18), col);
+  m.position.y = 2;
+  return group(m);
+}
+
+function mkCake(col) {
+  const m = mesh(new THREE.CylinderGeometry(3.8, 3.8, 1.4, 24), col);
+  m.position.y = 0.7;
+  return group(m);
+}
+
+// -- Triangles (Dorito = triangular prism)
+function mkDorito(col, scale = 1) {
+  const r = 4.5 * scale;
+  const h = 3.5 * scale;
+  const m = mesh(new THREE.CylinderGeometry(r, r, h, 3), col);
+  m.position.y = h / 2;
+  return group(m);
+}
+
+function mkMiniDorito(col) { return mkDorito(col, 0.55); }
+
+// -- Rectangles
+function mkBrick(col) {
+  const m = mesh(new THREE.BoxGeometry(9, 2, 2.5), col);
+  m.position.y = 1;
+  return group(m);
+}
+
+function mkTombstone(col) {
+  const m = mesh(new THREE.BoxGeometry(3, 5.5, 1.5), col);
+  m.position.y = 2.75;
+  return group(m);
+}
+
+function mkSupAir(col) {
+  const m = mesh(new THREE.BoxGeometry(7, 5, 1.5), col);
+  m.position.y = 2.5;
+  return group(m);
+}
+
+// -- Snakes (S-curve via rotated box segments)
+function mkSnake(col, scale = 1) {
+  const h = 2.8 * scale;
+  const segs = [
+    { x: -5.5 * scale, z:  1.8 * scale, ry:  Math.PI / 5.5 },
+    { x: -2.2 * scale, z:  0.6 * scale, ry:  Math.PI / 14  },
+    { x:  1.0 * scale, z: -0.6 * scale, ry: -Math.PI / 14  },
+    { x:  4.2 * scale, z: -1.8 * scale, ry: -Math.PI / 5.5 },
+  ];
+  const children = segs.map(s => {
+    const m = mesh(new THREE.BoxGeometry(3.2 * scale, h, 1.3 * scale), col);
+    m.position.set(s.x, h / 2, s.z);
+    m.rotation.y = s.ry;
+    return m;
+  });
+  return group(...children);
+}
+
+function mkMiniSnake(col) { return mkSnake(col, 0.6); }
+
+// -- Complex
+function mkTCK(col) {
+  // vertical stem + horizontal crossbar at top
+  const stem = mesh(new THREE.BoxGeometry(1.8, 4.5, 5.5), col);
+  stem.position.set(0, 2.25, 0);
+  const bar = mesh(new THREE.BoxGeometry(7, 4.5, 1.8), col);
+  bar.position.set(0, 2.25, -3.65);
+  return group(stem, bar);
+}
+
+function mkCorner(col) {
+  const a = mesh(new THREE.BoxGeometry(7, 3, 1.8), col);
+  a.position.set(0, 1.5, 0);
+  const b = mesh(new THREE.BoxGeometry(1.8, 3, 5.2), col);
+  b.position.set(-4.6, 1.5, -3.5);
+  return group(a, b);
+}
+
+function mkXBunker(col) {
+  const h1 = mesh(new THREE.BoxGeometry(9, 3.5, 1.8), col);
+  h1.position.y = 1.75;
+  const h2 = mesh(new THREE.BoxGeometry(1.8, 3.5, 9), col);
+  h2.position.y = 1.75;
+  return group(h1, h2);
+}
+
+const FACTORIES = {
+  can: mkCan, fatboy: mkFatboy, cake: mkCake,
+  dorito: mkDorito, mini_dorito: mkMiniDorito,
+  brick: mkBrick, tombstone: mkTombstone, sup_air: mkSupAir,
+  snake: mkSnake, mini_snake: mkMiniSnake,
+  tck: mkTCK, corner: mkCorner, x_bunker: mkXBunker,
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LAYOUT SLOTS  (localStorage)
+// ─────────────────────────────────────────────────────────────────────────────
+
+let activeSlot = 0;
+const SLOT_KEY = i => `speedlayout_slot_${i}`;
+
+function snapshotState() {
+  return {
+    version: 1,
+    fieldId: activeFieldId,
+    fieldW:  activeField().width,
+    fieldL:  activeField().length,
+    placed:  placed.map(g => ({
+      type:   g.userData.bunker.id,
+      label:  g.userData.bunker.label,
+      x: g.position.x, z: g.position.z,
+      rotY:   g.rotation.y,
+      scaleX: g.scale.x, scaleZ: g.scale.z,
+    })),
+    players: players.map(g => ({
+      team:       g.userData.team,
+      weapon:     g.userData.weapon,
+      playerName: g.userData.playerName || '',
+      stance:     g.userData.stance || 'standing',
+      rotY:       g.rotation.y,
+      x: g.position.x, z: g.position.z,
+    })),
+  };
+}
+
+function restoreState(snap) {
+  [...placed, ...players].forEach(g => scene.remove(g));
+  placed = []; players = [];
+  deselect();
+  if (snap.fieldId && snap.fieldId !== activeFieldId) {
+    activeFieldId = snap.fieldId;
+  }
+  if (snap.fieldW) activeField().width  = snap.fieldW;
+  if (snap.fieldL) activeField().length = snap.fieldL;
+  buildField();
+  snap.placed.forEach(p => {
+    const g = placeBunker(p.type, new THREE.Vector3(p.x, 0, p.z), p.rotY);
+    if (g) {
+      g.scale.x = p.scaleX ?? 1;
+      g.scale.z = p.scaleZ ?? 1;
+      if (p.label) g.userData.bunker = { ...g.userData.bunker, label: p.label };
+    }
+  });
+  snap.players.forEach(p => {
+    const savedTeam   = playerTeam;
+    const savedWeapon = playerWeapon;
+    playerTeam   = p.team;
+    playerWeapon = p.weapon;
+    const pg = placePlayer(new THREE.Vector3(p.x, 0, p.z));
+    if (pg && p.playerName) { pg.userData.playerName = p.playerName; refreshPlayerSprite(pg); }
+    if (pg && p.stance && p.stance !== 'standing') setPlayerStance(pg, p.stance, true);
+    if (pg && p.rotY) pg.rotation.y = p.rotY;
+    playerTeam   = savedTeam;
+    playerWeapon = savedWeapon;
+  });
+  deselect();
+  refreshLabels();
+  buildSidebar();
+}
+
+function loadSlotMeta(i) {
+  try { const d = localStorage.getItem(SLOT_KEY(i)); return d ? JSON.parse(d).__meta : null; }
+  catch { return null; }
+}
+
+function saveSlot(i, name) {
+  const snap = snapshotState();
+  snap.__meta = { name };
+  localStorage.setItem(SLOT_KEY(i), JSON.stringify(snap));
+}
+
+function loadSlot(i) {
+  const d = localStorage.getItem(SLOT_KEY(i));
+  pushUndo();
+  if (!d) {
+    [...placed, ...players].forEach(g => scene.remove(g));
+    placed = []; players = []; deselect();
+    clearAllArrows();
+    buildSidebar();
+    return;
+  }
+  try { restoreState(JSON.parse(d)); }
+  catch(e) { alert('Failed to load slot: ' + e.message); }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// UNDO / REDO
+// ─────────────────────────────────────────────────────────────────────────────
+
+const undoStack = [];
+const redoStack = [];
+const MAX_UNDO  = 50;
+
+// Scene undo/redo (bunkers + players)
+let autoSaveTimer = null;
+function autoSave() {
+  if (autoSaveTimer) clearTimeout(autoSaveTimer);
+  autoSaveTimer = setTimeout(() => {
+    try {
+      localStorage.setItem('speedlayout_autosave_v2', JSON.stringify(snapshotState()));
+      showToast('Saved');
+    } catch(e) {}
+  }, 500);
+}
+
+function pushUndo() {
+  undoStack.push(JSON.stringify(snapshotState()));
+  if (undoStack.length > MAX_UNDO) undoStack.shift();
+  redoStack.length = 0;
+  autoSave();
+}
+
+function sceneUndo() {
+  if (!undoStack.length) return;
+  redoStack.push(JSON.stringify(snapshotState()));
+  restoreState(JSON.parse(undoStack.pop()));
+}
+
+function sceneRedo() {
+  if (!redoStack.length) return;
+  undoStack.push(JSON.stringify(snapshotState()));
+  restoreState(JSON.parse(redoStack.pop()));
+}
+
+// Arrow undo/redo (separate stack for strokes)
+const arrowUndoStack = [];
+const arrowRedoStack = [];
+
+function pushArrowUndo() {
+  arrowUndoStack.push(arrowStrokes.map(s => ({ ...s, pts: [...s.pts] })));
+  if (arrowUndoStack.length > MAX_UNDO) arrowUndoStack.shift();
+  arrowRedoStack.length = 0;
+}
+
+function arrowUndo() {
+  if (!arrowUndoStack.length) return;
+  arrowRedoStack.push(arrowStrokes.map(s => ({ ...s, pts: [...s.pts] })));
+  arrowStrokes = arrowUndoStack.pop();
+  redrawArrows();
+}
+
+function arrowRedo() {
+  if (!arrowRedoStack.length) return;
+  arrowUndoStack.push(arrowStrokes.map(s => ({ ...s, pts: [...s.pts] })));
+  arrowStrokes = arrowRedoStack.pop();
+  redrawArrows();
+}
+
+// Mode-aware undo / redo (called by buttons and keyboard)
+function undo() {
+  if (mode === 'arrow') arrowUndo(); else sceneUndo();
+}
+
+function redo() {
+  if (mode === 'arrow') arrowRedo(); else sceneRedo();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BUNKER LABELS
+// ─────────────────────────────────────────────────────────────────────────────
+
+let showLabels = false;
+
+function makeLabelSprite(text) {
+  const cvs = document.createElement('canvas');
+  cvs.width = 256; cvs.height = 64;
+  const ctx = cvs.getContext('2d');
+  ctx.fillStyle = 'rgba(0,0,0,0.65)';
+  roundRect(ctx, 0, 0, cvs.width, cvs.height, 12);
+  ctx.fill();
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 28px -apple-system, sans-serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(text, 128, 34);
+  const tex = new THREE.CanvasTexture(cvs);
+  const mat = new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true });
+  const sprite = new THREE.Sprite(mat);
+  sprite.scale.set(6, 1.5, 1);
+  sprite.userData.isLabel = true;
+  return sprite;
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y); ctx.arcTo(x + w, y, x + w, y + r, r);
+  ctx.lineTo(x + w, y + h - r); ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+  ctx.lineTo(x + r, y + h); ctx.arcTo(x, y + h, x, y + h - r, r);
+  ctx.lineTo(x, y + r); ctx.arcTo(x, y, x + r, y, r);
+  ctx.closePath();
+}
+
+function attachLabel(g) {
+  detachLabel(g);
+  const sprite = makeLabelSprite(g.userData.bunker?.label || '?');
+  sprite.position.set(0, 7, 0);
+  g.add(sprite);
+}
+
+function detachLabel(g) {
+  const existing = g.children.filter(c => c.userData.isLabel);
+  existing.forEach(c => g.remove(c));
+}
+
+function refreshLabels() {
+  placed.forEach(g => {
+    if (showLabels) attachLabel(g); else detachLabel(g);
+  });
+  players.forEach(g => {
+    g.traverse(c => {
+      if (c.isSprite) c.visible = showLabels;
+    });
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SCREENSHOT
+// ─────────────────────────────────────────────────────────────────────────────
+
+function takeScreenshot() {
+  renderer.render(scene, camera);
+  const url = renderer.domElement.toDataURL('image/png');
+  const a   = document.createElement('a');
+  a.href     = url;
+  a.download = `layout_${Date.now()}.png`;
+  a.click();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// EXPORT / IMPORT JSON
+// ─────────────────────────────────────────────────────────────────────────────
+
+function exportJSON() {
+  const snap = snapshotState();
+  const blob = new Blob([JSON.stringify(snap, null, 2)], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = `layout_${Date.now()}.json`; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importJSON(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      pushUndo();
+      restoreState(JSON.parse(e.target.result));
+    } catch(err) { alert('Invalid layout file: ' + err.message); }
+  };
+  reader.readAsText(file);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// VISIT COUNTER
+// ─────────────────────────────────────────────────────────────────────────────
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SIDEBAR  (rebuilt on field switch)
+// ─────────────────────────────────────────────────────────────────────────────
+
+const sidebar = document.getElementById('sidebar');
+
+function buildSidebar() {
+  const wasCollapsed = document.body.classList.contains('sidebar-collapsed');
+  sidebar.innerHTML = `
+    <div class="drawer-handle"></div>
+    <button id="sidebar-collapse-btn" title="Collapse panel">
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+        <path id="collapse-icon" d="${wasCollapsed ? 'M4 2 L8 6 L4 10' : 'M8 2 L4 6 L8 10'}" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+    <div id="sidebar-header">
+      <div style="margin-bottom:10px">
+        <div class="app-title" style="font-size:16px;font-weight:700;letter-spacing:-0.4px">Speedsoft Layout Planner</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:2px;letter-spacing:0.1px">Created by <a href="https://www.instagram.com/bryan.paintball/" target="_blank" rel="noopener" style="color:var(--text2);text-decoration:none">@bryan.paintball</a></div>
+        <button id="btn-release-notes">📋 Release Notes &amp; Roadmap</button>
+      </div>
+      <div class="field-selector-wrap">
+        <div class="field-selector-label">Field</div>
+        <div class="field-select-control">
+          <select id="field-select">
+            ${Object.entries(FIELD_DEFS).map(([id, f]) =>
+              `<option value="${id}"${id === activeFieldId ? ' selected' : ''}>${f.label}</option>`
+            ).join('')}
+          </select>
+          <svg class="field-select-chevron" width="12" height="12" viewBox="0 0 12 12" fill="none">
+            <path d="M2 4 L6 8 L10 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+      <!-- Field dimensions -->
+      <div class="dim-row">
+        <div class="dim-field">
+          <div class="dim-label">Width (ft)</div>
+          <input class="dim-input" id="dim-w" type="number" min="10" max="300" value="${activeField().width}">
+        </div>
+        <div class="dim-field">
+          <div class="dim-label">Length (ft)</div>
+          <input class="dim-input" id="dim-l" type="number" min="10" max="300" value="${activeField().length}">
+        </div>
+      </div>
+      <!-- Layout slots -->
+      <div class="field-selector-label" style="margin-top:10px">Layouts</div>
+      <div class="slot-row">
+        ${[0,1,2,3].map(i => {
+          const s = loadSlotMeta(i);
+          return `<button class="slot-btn${s ? ' filled' : ''}${activeSlot===i ? ' active' : ''}" data-slot="${i}">${s ? s.name : 'Empty'}</button>`;
+        }).join('')}
+      </div>
+      <div class="slot-actions">
+        <button class="slot-action-btn save-btn" id="btn-save-slot">Save to slot</button>
+        <button class="slot-action-btn" id="btn-load-slot">Load slot</button>
+      </div>
+      <div class="slot-actions" style="margin-top:4px">
+        <button class="slot-action-btn" id="btn-export-sb">Export JSON</button>
+        <label class="slot-action-btn" style="cursor:pointer;text-align:center">Import JSON<input type="file" id="btn-import-sb" accept=".json" style="display:none"></label>
+      </div>
+      <!-- Environment colours -->
+      <div style="margin-top:12px">
+        <div class="field-selector-label">Environment Colors</div>
+        <div class="dim-row" style="margin-top:4px">
+          <div class="dim-field">
+            <div class="dim-label">Space (BG)</div>
+            <input type="color" id="env-space-color" value="${envSpaceColor}"
+              style="width:100%;height:28px;border:1px solid var(--separator);border-radius:6px;background:none;cursor:pointer;padding:2px 4px">
+          </div>
+          <div class="dim-field">
+            <div class="dim-label">Ground</div>
+            <input type="color" id="env-ground-color" value="${envGroundColor}"
+              style="width:100%;height:28px;border:1px solid var(--separator);border-radius:6px;background:none;cursor:pointer;padding:2px 4px">
+          </div>
+        </div>
+      </div>
+
+      <button id="btn-controls">🎮 Controls &amp; Tips</button>
+    </div>`;
+
+  document.getElementById('env-space-color').addEventListener('input', e => {
+    envSpaceColor = e.target.value;
+    localStorage.setItem('speedlayout_space_color', envSpaceColor);
+    applyEnvColors();
+  });
+  document.getElementById('env-ground-color').addEventListener('input', e => {
+    envGroundColor = e.target.value;
+    localStorage.setItem('speedlayout_ground_color', envGroundColor);
+    buildField(); // rebuild grid colour too
+    applyEnvColors();
+  });
+
+  document.getElementById('field-select').addEventListener('change', e => {
+    activeFieldId = e.target.value;
+    buildField();
+    buildSidebar();
+    // Clear placed bunkers since we switched fields
+    [...placed, ...players].forEach(g => scene.remove(g));
+    placed = []; players = []; deselect();
+    controls.target.set(0, 0, 0);
+    camera.position.set(0, FH * 0.5, FH * 0.65);
+    controls.update();
+    // Load the default starting layout for the new field
+    loadDefaultLayout(activeFieldId);
+  });
+
+  const cats = {};
+  BUNKERS().forEach(b => { (cats[b.cat] = cats[b.cat] || []).push(b); });
+
+  Object.entries(cats).forEach(([cat, bunkers]) => {
+    const sec = document.createElement('div');
+    sec.className = 'bunker-section';
+    sec.innerHTML = `<div class="section-label">${cat}</div>`;
+    bunkers.forEach(b => {
+      const card = document.createElement('div');
+      card.className = 'bunker-card';
+      card.draggable = true;
+      card.dataset.type = b.id;
+      card.innerHTML = `
+        <div class="bunker-icon" style="background:${b.color}22;border:1.5px solid ${b.color}88">
+          <svg width="22" height="22" viewBox="0 0 24 24">${svgIcon(b.id, b.color)}</svg>
+        </div>
+        <div style="flex:1;min-width:0">
+          <div class="bunker-name">${b.label}</div>
+          <div class="bunker-desc">${b.desc}</div>
+        </div>
+        <button class="bunker-rename-btn" data-bunker-id="${b.id}" title="Rename bunker type">✎</button>`;
+
+      // Sidebar type-rename button
+      card.querySelector('.bunker-rename-btn').addEventListener('click', e => {
+        e.stopPropagation(); e.preventDefault();
+        openSidebarRenameModal(b.id);
+      });
+      card.addEventListener('dragstart', e => {
+        pendingType = b.id;
+        e.dataTransfer.setData('bunkerType', b.id);
+        e.dataTransfer.effectAllowed = 'copy';
+        const ghost = document.getElementById('drag-ghost');
+        ghost.textContent = b.label;
+        ghost.style.cssText = `display:block;padding:4px 8px;border-radius:4px;
+          font-size:11px;color:#fff;background:${b.color};position:fixed;top:-100px;left:-100px;`;
+        e.dataTransfer.setDragImage(ghost, -10, -10);
+        setTimeout(() => { ghost.style.display = 'none'; }, 0);
+      });
+      card.addEventListener('dragend', () => { disarm(); });
+      let touchMoved = false;
+      card.addEventListener('touchstart', () => { touchMoved = false; armType(b.id, card); }, { passive: true });
+      card.addEventListener('touchmove', () => { touchMoved = true; }, { passive: true });
+      card.addEventListener('touchend', () => { if (!touchMoved) closeSidebar(); }, { passive: true });
+      sec.appendChild(card);
+    });
+    sidebar.appendChild(sec);
+  });
+  bindCollapseBtn();
+
+  // Field dimension inputs
+  const dimW = document.getElementById('dim-w');
+  const dimL = document.getElementById('dim-l');
+  function applyDims() {
+    const w = parseInt(dimW.value) || 50;
+    const l = parseInt(dimL.value) || 100;
+    activeField().width  = Math.max(10, Math.min(300, w));
+    activeField().length = Math.max(10, Math.min(300, l));
+    buildField();
+  }
+  dimW.addEventListener('change', applyDims);
+  dimL.addEventListener('change', applyDims);
+
+  // Slot buttons
+  document.querySelectorAll('.slot-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      activeSlot = parseInt(btn.dataset.slot);
+      document.querySelectorAll('.slot-btn').forEach(b => b.classList.toggle('active', b === btn));
+    });
+  });
+  document.getElementById('btn-save-slot').addEventListener('click', () => {
+    const name = prompt(`Name this layout (slot ${activeSlot + 1}):`, `Layout ${activeSlot + 1}`);
+    if (name === null) return;
+    saveSlot(activeSlot, name.trim() || `Layout ${activeSlot + 1}`);
+    buildSidebar();
+  });
+  document.getElementById('btn-load-slot').addEventListener('click', () => {
+    const meta = loadSlotMeta(activeSlot);
+    if (!meta) {
+      if (!confirm('Slot is empty — load it anyway? (This will clear the field.)')) return;
+    } else {
+      if (!confirm(`Load "${meta.name}"? Current layout will be replaced.`)) return;
+    }
+    loadSlot(activeSlot);
+  });
+  document.getElementById('btn-export-sb').addEventListener('click', exportJSON);
+  document.getElementById('btn-import-sb').addEventListener('change', e => {
+    if (e.target.files[0]) { importJSON(e.target.files[0]); e.target.value = ''; }
+  });
+}
+
+buildSidebar();
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SIDEBAR BUNKER-TYPE RENAME
+// Renames the bunker type label in the sidebar (affects future drops only).
+// Reuses the rename modal; sidebarRenameId distinguishes mode from instance rename.
+// ─────────────────────────────────────────────────────────────────────────────
+let sidebarRenameId = null;
+
+function openSidebarRenameModal(bunkerTypeId) {
+  const b = activeField().bunkers.find(x => x.id === bunkerTypeId);
+  if (!b) return;
+  sidebarRenameId = bunkerTypeId;
+  renameTarget = null;  // clear instance target
+  renameInput.value = b.label;
+  const hint = renameModal.querySelector('.rename-type-hint');
+  if (hint) hint.textContent = 'Renames this bunker type in the sidebar only — placed bunkers are unaffected.';
+  renameModal.classList.add('open');
+  setTimeout(() => { renameInput.focus(); renameInput.select(); }, 60);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DEFAULT FIELD LAYOUTS
+// ─────────────────────────────────────────────────────────────────────────────
+// Layout data from exported JSON — includes scale for mirrored snakes
+const DEFAULT_LAYOUTS = {
+  project_n1: [
+    { type: 'x_bunker',  x:  0,    z:  0,     rotY: 0,                        scaleX: 1, scaleZ:  1 },
+    { type: 'snake',     x:  12.5, z:  10,    rotY: 0.7853981633974481,       scaleX: 1, scaleZ:  1 },
+    { type: 'snake',     x:  12.5, z: -10,    rotY: -1.0471975511965976,      scaleX: 1, scaleZ: -1 },
+    { type: 'tombstone', x:  15,   z:  0,     rotY: 0,                        scaleX: 1, scaleZ:  1 },
+    { type: 'tombstone', x:  15,   z:  0,     rotY: 0,                        scaleX: 1, scaleZ: -1 },
+    { type: 'tombstone', x: -20,   z:  15,    rotY: 0,                        scaleX: 1, scaleZ:  1 },
+    { type: 'tombstone', x: -20,   z: -15,    rotY: 0,                        scaleX: 1, scaleZ: -1 },
+    { type: 'tombstone', x: -12.5, z:  5,     rotY: 0,                        scaleX: 1, scaleZ:  1 },
+    { type: 'tombstone', x: -12.5, z: -5,     rotY: 0,                        scaleX: 1, scaleZ: -1 },
+    { type: 'can',       x: -20,   z:  32.5,  rotY: 0,                        scaleX: 1, scaleZ:  1 },
+    { type: 'can',       x: -20,   z: -32.5,  rotY: 0,                        scaleX: 1, scaleZ: -1 },
+    { type: 'can',       x:  0,    z:  32.5,  rotY: 0,                        scaleX: 1, scaleZ:  1 },
+    { type: 'can',       x:  0,    z: -32.5,  rotY: 0,                        scaleX: 1, scaleZ: -1 },
+    { type: 'can',       x:  17.5, z:  32.5,  rotY: 0,                        scaleX: 1, scaleZ:  1 },
+    { type: 'can',       x:  17.5, z: -32.5,  rotY: 0,                        scaleX: 1, scaleZ: -1 },
+    { type: 'fatboy',    x:  0,    z:  15,    rotY: 0,                        scaleX: 1, scaleZ:  1 },
+    { type: 'fatboy',    x:  0,    z: -15,    rotY: 0,                        scaleX: 1, scaleZ: -1 },
+  ],
+
+  tac_city: [
+    // Starting walls at both spawn ends
+    { type: 'brick',     x:  0,    z: -47,    rotY: 0,                        scaleX: 1, scaleZ:  1 },
+    { type: 'brick',     x:  0,    z:  47,    rotY: 0,                        scaleX: 1, scaleZ:  1 },
+    // Same field layout as Project N1
+    { type: 'x_bunker',  x:  0,    z:  0,     rotY: 0,                        scaleX: 1, scaleZ:  1 },
+    { type: 'snake',     x:  12.5, z:  10,    rotY: 0.7853981633974481,       scaleX: 1, scaleZ:  1 },
+    { type: 'snake',     x:  12.5, z: -10,    rotY: -1.0471975511965976,      scaleX: 1, scaleZ: -1 },
+    { type: 'tombstone', x:  15,   z:  0,     rotY: 0,                        scaleX: 1, scaleZ:  1 },
+    { type: 'tombstone', x:  15,   z:  0,     rotY: 0,                        scaleX: 1, scaleZ: -1 },
+    { type: 'tombstone', x: -20,   z:  15,    rotY: 0,                        scaleX: 1, scaleZ:  1 },
+    { type: 'tombstone', x: -20,   z: -15,    rotY: 0,                        scaleX: 1, scaleZ: -1 },
+    { type: 'tombstone', x: -12.5, z:  5,     rotY: 0,                        scaleX: 1, scaleZ:  1 },
+    { type: 'tombstone', x: -12.5, z: -5,     rotY: 0,                        scaleX: 1, scaleZ: -1 },
+    { type: 'can',       x: -20,   z:  32.5,  rotY: 0,                        scaleX: 1, scaleZ:  1 },
+    { type: 'can',       x: -20,   z: -32.5,  rotY: 0,                        scaleX: 1, scaleZ: -1 },
+    { type: 'can',       x:  0,    z:  32.5,  rotY: 0,                        scaleX: 1, scaleZ:  1 },
+    { type: 'can',       x:  0,    z: -32.5,  rotY: 0,                        scaleX: 1, scaleZ: -1 },
+    { type: 'can',       x:  17.5, z:  32.5,  rotY: 0,                        scaleX: 1, scaleZ:  1 },
+    { type: 'can',       x:  17.5, z: -32.5,  rotY: 0,                        scaleX: 1, scaleZ: -1 },
+    { type: 'fatboy',    x:  0,    z:  15,    rotY: 0,                        scaleX: 1, scaleZ:  1 },
+    { type: 'fatboy',    x:  0,    z: -15,    rotY: 0,                        scaleX: 1, scaleZ: -1 },
+  ],
+};
+
+function loadDefaultLayout(fieldId) {
+  const layout = DEFAULT_LAYOUTS[fieldId];
+  if (!layout) return;
+  layout.forEach(b => {
+    const g = placeBunker(b.type, new THREE.Vector3(b.x, 0, b.z), b.rotY ?? 0);
+    if (g) {
+      g.scale.x = b.scaleX ?? 1;
+      g.scale.z = b.scaleZ ?? 1;
+    }
+  });
+}
+
+// Load autosave on startup (called later, after placed/players are declared)
+function loadAutosave() {
+  try {
+    const d = localStorage.getItem('speedlayout_autosave_v2');
+    if (d) { restoreState(JSON.parse(d)); return; }
+  } catch(e) {}
+  // No autosave — load default layout for the active field
+  loadDefaultLayout(activeFieldId);
+}
+
+function svgIcon(id, c) {
+  switch (id) {
+    case 'snake':
+    case 'mini_snake':
+      return `<path d="M2 17 Q6 7 12 12 Q18 17 22 7" stroke="${c}" stroke-width="2.5" fill="none" stroke-linecap="round"/>`;
+    case 'dorito':
+    case 'mini_dorito':
+      return `<polygon points="12,3 22,20 2,20" fill="${c}88" stroke="${c}" stroke-width="1.5"/>`;
+    case 'can':
+      return `<ellipse cx="12" cy="7" rx="6" ry="2.5" fill="${c}"/><rect x="6" y="7" width="12" height="11" fill="${c}99"/><ellipse cx="12" cy="18" rx="6" ry="2.5" fill="${c}cc"/>`;
+    case 'fatboy':
+      return `<ellipse cx="12" cy="7" rx="9" ry="3" fill="${c}"/><rect x="3" y="7" width="18" height="10" fill="${c}99"/><ellipse cx="12" cy="17" rx="9" ry="3" fill="${c}cc"/>`;
+    case 'cake':
+      return `<ellipse cx="12" cy="9" rx="10" ry="3.5" fill="${c}"/><rect x="2" y="9" width="20" height="6" fill="${c}99"/><ellipse cx="12" cy="15" rx="10" ry="3.5" fill="${c}cc"/>`;
+    case 'brick':
+      return `<rect x="2" y="9" width="20" height="7" rx="1" fill="${c}99" stroke="${c}" stroke-width="1.2"/>`;
+    case 'tombstone':
+      return `<rect x="8" y="3" width="8" height="18" rx="2.5" fill="${c}99" stroke="${c}" stroke-width="1.2"/>`;
+    case 'sup_air':
+      return `<rect x="3" y="4" width="18" height="16" rx="2" fill="${c}99" stroke="${c}" stroke-width="1.2"/>`;
+    case 'tck':
+      return `<rect x="2" y="4" width="20" height="6" rx="1" fill="${c}99" stroke="${c}" stroke-width="1"/><rect x="9" y="10" width="6" height="10" rx="1" fill="${c}77" stroke="${c}" stroke-width="1"/>`;
+    case 'corner':
+      return `<path d="M3 20 L3 5 L9 5 L9 14 L21 14 L21 20 Z" fill="${c}88" stroke="${c}" stroke-width="1.2"/>`;
+    case 'x_bunker':
+      return `<path d="M10 2 L14 2 L14 10 L22 10 L22 14 L14 14 L14 22 L10 22 L10 14 L2 14 L2 10 L10 10 Z" fill="${c}88" stroke="${c}" stroke-width="1"/>`;
+    default:
+      return `<rect x="4" y="4" width="16" height="16" fill="${c}"/>`;
+  }
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 2D ARROW CANVAS
+// ─────────────────────────────────────────────────────────────────────────────
+
+const arrowCanvas = document.getElementById('arrow-canvas');
+const actx = arrowCanvas.getContext('2d');
+let arrowStrokes = [];        // { pts, color, width, type }
+let currentStroke = null;
+let arrowColor = '#ff453a';
+let arrowWidth = 3;
+let arrowType  = 'move';     // 'move' | 'shoot'
+
+function resizeArrowCanvas() {
+  const r = wrap.getBoundingClientRect();
+  arrowCanvas.width  = r.width;
+  arrowCanvas.height = r.height;
+  redrawArrows();
+}
+
+function redrawArrows() {
+  actx.clearRect(0, 0, arrowCanvas.width, arrowCanvas.height);
+  arrowStrokes.forEach(s => drawStroke(s, false));
+  if (currentStroke) drawStroke(currentStroke, true);
+}
+
+function drawStroke(stroke, isLive) {
+  const { pts, color, width, type } = stroke;
+  if (pts.length < 2) return;
+  actx.save();
+  actx.strokeStyle = color;
+  actx.lineWidth   = width;
+  actx.lineCap     = 'round';
+  actx.lineJoin    = 'round';
+  actx.globalAlpha = isLive ? 0.7 : 1.0;
+  if (type === 'shoot') actx.setLineDash([8, 6]);
+  actx.beginPath();
+  actx.moveTo(pts[0].x, pts[0].y);
+  for (let i = 1; i < pts.length; i++) actx.lineTo(pts[i].x, pts[i].y);
+  actx.stroke();
+  actx.setLineDash([]);
+
+  // Arrowhead at last segment
+  const n = pts.length;
+  const tail = pts[Math.max(0, n - 8)];
+  const tip  = pts[n - 1];
+  const angle = Math.atan2(tip.y - tail.y, tip.x - tail.x);
+  const headLen = Math.max(12, width * 4);
+  if (type === 'shoot') {
+    actx.beginPath();
+    actx.moveTo(tip.x, tip.y);
+    actx.lineTo(tip.x - headLen * Math.cos(angle - 0.6), tip.y - headLen * Math.sin(angle - 0.6));
+    actx.lineTo(tip.x - headLen * Math.cos(angle + 0.6), tip.y - headLen * Math.sin(angle + 0.6));
+    actx.closePath();
+    actx.fillStyle = color;
+    actx.fill();
+  } else {
+    actx.beginPath();
+    actx.moveTo(tip.x, tip.y);
+    actx.lineTo(tip.x - headLen * Math.cos(angle - 0.4), tip.y - headLen * Math.sin(angle - 0.4));
+    actx.moveTo(tip.x, tip.y);
+    actx.lineTo(tip.x - headLen * Math.cos(angle + 0.4), tip.y - headLen * Math.sin(angle + 0.4));
+    actx.stroke();
+  }
+  actx.restore();
+}
+
+function clearAllArrows() {
+  pushArrowUndo();
+  arrowStrokes = [];
+  currentStroke = null;
+  redrawArrows();
+}
+
+// Arrow canvas pointer events
+arrowCanvas.addEventListener('pointerdown', e => {
+  if (mode !== 'arrow') return;
+  e.preventDefault();
+  arrowCanvas.setPointerCapture(e.pointerId);
+  const r = arrowCanvas.getBoundingClientRect();
+  const startPt = { x: e.clientX - r.left, y: e.clientY - r.top };
+  // Shot arrows always straight: seed two identical points, endpoint updated on move
+  currentStroke = {
+    pts: arrowType === 'shoot' ? [startPt, { ...startPt }] : [startPt],
+    color: arrowColor, width: arrowWidth, type: arrowType
+  };
+  redrawArrows();
+});
+
+arrowCanvas.addEventListener('pointermove', e => {
+  if (!currentStroke) return;
+  e.preventDefault();
+  const r   = arrowCanvas.getBoundingClientRect();
+  const pt  = { x: e.clientX - r.left, y: e.clientY - r.top };
+  if (currentStroke.type === 'shoot') {
+    // Shot arrows are always straight — just update the endpoint
+    currentStroke.pts[1] = pt;
+  } else {
+    currentStroke.pts.push(pt);
+  }
+  redrawArrows();
+});
+
+arrowCanvas.addEventListener('pointerup', e => {
+  if (!currentStroke) return;
+  if (currentStroke.pts.length > 1) {
+    pushArrowUndo();
+    arrowStrokes.push(currentStroke);
+  }
+  currentStroke = null;
+  redrawArrows();
+});
+
+arrowCanvas.addEventListener('pointercancel', () => {
+  currentStroke = null;
+  redrawArrows();
+});
+
+// Arrow toolbar controls
+document.querySelectorAll('.arrow-color-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    arrowColor = btn.dataset.color;
+    document.querySelectorAll('.arrow-color-btn').forEach(b => b.classList.toggle('on', b === btn));
+  });
+});
+document.querySelectorAll('.arrow-size-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    arrowWidth = parseInt(btn.dataset.size);
+    document.querySelectorAll('.arrow-size-btn').forEach(b => b.classList.toggle('on', b === btn));
+  });
+});
+document.getElementById('btn-clear-arrows').addEventListener('click', clearAllArrows);
+
+window.addEventListener('resize', resizeArrowCanvas);
+resizeArrowCanvas();
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SIDEBAR COLLAPSE (desktop) — bound inside buildSidebar() since btn is rebuilt
+// ─────────────────────────────────────────────────────────────────────────────
+
+function bindCollapseBtn() {
+  const btn  = document.getElementById('sidebar-collapse-btn');
+  const icon = document.getElementById('collapse-icon');
+  if (!btn) return;
+  btn.addEventListener('click', () => {
+    const collapsed = document.body.classList.toggle('sidebar-collapsed');
+    icon.setAttribute('d', collapsed
+      ? 'M4 2 L8 6 L4 10'
+      : 'M8 2 L4 6 L8 10'
+    );
+    setTimeout(resize, 260);
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// INTERACTION STATE
+// ─────────────────────────────────────────────────────────────────────────────
+
+let placed   = [];
+let players  = [];
+let selected = null;
+let selSet   = new Set();   // multi-select set; selected = last clicked
+let snapEnabled   = true;
+let mirrorEnabled = false;
+let pendingType = null;
+let armedCard   = null;
+let ghost3D     = null;
+
+let mode         = 'select';
+let playerTeam   = 'red';
+let playerWeapon = 'R';
+
+let isDraggingBunker = false;
+let isPendingPlace   = false;
+let dragOffset = new THREE.Vector3();
+let ptrDown    = { x: 0, y: 0 };
+
+// Box-select state
+let boxSelecting = false;
+let boxStart = { x: 0, y: 0 };
+const boxEl = document.getElementById('box-select');
+
+const raycaster  = new THREE.Raycaster();
+const fieldPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0.01);
+
+const isMobile = () => window.innerWidth <= 640;
+
+function ndcFromClient(clientX, clientY) {
+  const r = canvas.getBoundingClientRect();
+  return new THREE.Vector2(
+    ((clientX - r.left) / r.width)  *  2 - 1,
+    -((clientY - r.top)  / r.height) *  2 + 1
+  );
+}
+function ndcFromEvent(e)   { return ndcFromClient(e.clientX, e.clientY); }
+
+function worldFromClient(clientX, clientY) {
+  raycaster.setFromCamera(ndcFromClient(clientX, clientY), camera);
+  const pt = new THREE.Vector3();
+  if (!raycaster.ray.intersectPlane(fieldPlane, pt)) return null;
+  if (snapEnabled) {
+    const s = 2.5;
+    pt.x = Math.round(pt.x / s) * s;
+    pt.z = Math.round(pt.z / s) * s;
+  }
+  pt.x = Math.max(-hw, Math.min(hw, pt.x));
+  pt.z = Math.max(-hh, Math.min(hh, pt.z));
+  pt.y = 0;
+  return pt;
+}
+function worldFromEvent(e) { return worldFromClient(e.clientX, e.clientY); }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MODE SYSTEM
+// ─────────────────────────────────────────────────────────────────────────────
+
+function setMode(m) {
+  mode = m;
+  ['select','player','arrow'].forEach(id =>
+    document.getElementById(`btn-mode-${id}`).classList.toggle('on', id === m)
+  );
+  document.getElementById('player-panel').style.display = m === 'player' ? 'flex' : 'none';
+  // right-panel is hidden via CSS; snap/mirror are now in toolbar
+  document.body.classList.toggle('arrow-mode', m === 'arrow');
+  if (m !== 'select') { deselect(); disarm(); }
+  canvas.style.cursor = m === 'player' ? 'cell' : 'default';
+}
+
+document.getElementById('btn-mode-select').addEventListener('click', () => setMode('select'));
+document.getElementById('btn-mode-player').addEventListener('click', () => setMode('player'));
+document.getElementById('btn-mode-arrow').addEventListener('click',  () => setMode('arrow'));
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SIDEBAR OPEN/CLOSE (mobile)
+// ─────────────────────────────────────────────────────────────────────────────
+
+const toggleBtn = document.getElementById('sidebar-toggle');
+
+function openSidebar() {
+  document.body.classList.add('sidebar-open');
+  toggleBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+    <path d="M3 11 L8 5 L13 11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg> Close`;
+}
+function closeSidebar() {
+  document.body.classList.remove('sidebar-open');
+  toggleBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+    <rect x="2" y="4" width="12" height="1.5" rx="0.75" fill="currentColor"/>
+    <rect x="2" y="7.25" width="12" height="1.5" rx="0.75" fill="currentColor"/>
+    <rect x="2" y="10.5" width="12" height="1.5" rx="0.75" fill="currentColor"/>
+  </svg> Bunkers`;
+}
+toggleBtn.addEventListener('click', () =>
+  document.body.classList.contains('sidebar-open') ? closeSidebar() : openSidebar()
+);
+canvas.addEventListener('pointerdown', () => {
+  if (isMobile() && document.body.classList.contains('sidebar-open')) closeSidebar();
+}, { capture: true, passive: true });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PLACEMENT BANNER + ARM
+// ─────────────────────────────────────────────────────────────────────────────
+
+const placeBanner = document.getElementById('place-banner');
+
+function armType(type, cardEl) {
+  if (armedCard) armedCard.classList.remove('armed');
+  pendingType = type;
+  armedCard   = cardEl;
+  cardEl.classList.add('armed');
+  const b = BUNKERS().find(x => x.id === type);
+  placeBanner.textContent = `Tap the field to place ${b.label}`;
+  placeBanner.style.display = 'block';
+  createGhost3D(type);
+}
+function disarm() {
+  pendingType = null;
+  if (armedCard) { armedCard.classList.remove('armed'); armedCard = null; }
+  placeBanner.style.display = 'none';
+  removeGhost();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GHOST
+// ─────────────────────────────────────────────────────────────────────────────
+
+function createGhost3D(type) {
+  removeGhost();
+  const b = BUNKERS().find(x => x.id === type);
+  if (!b || !FACTORIES[type]) return;
+  ghost3D = FACTORIES[type](b.color);
+  ghost3D.traverse(c => {
+    if (c.isMesh) {
+      c.material = new THREE.MeshLambertMaterial({ color: hex3(b.color), transparent: true, opacity: 0.4 });
+      c.castShadow = false; // no shadows
+    }
+  });
+  scene.add(ghost3D);
+}
+function removeGhost() {
+  if (ghost3D) { scene.remove(ghost3D); ghost3D = null; }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TOUCH DRAG (sidebar → field)
+// ─────────────────────────────────────────────────────────────────────────────
+
+let touchDragging = false;
+document.addEventListener('touchmove', e => {
+  if (!pendingType || !ghost3D) return;
+  const t   = e.touches[0];
+  const el  = document.elementFromPoint(t.clientX, t.clientY);
+  if (el === canvas || (el && canvas.contains(el))) {
+    touchDragging = true;
+    controls.enabled = false;
+    const pt = worldFromClient(t.clientX, t.clientY);
+    if (pt) ghost3D.position.copy(pt);
+  }
+}, { passive: true });
+
+document.addEventListener('touchend', e => {
+  if (!touchDragging || !pendingType) return;
+  touchDragging    = false;
+  controls.enabled = true;
+  const t  = e.changedTouches[0];
+  const el = document.elementFromPoint(t.clientX, t.clientY);
+  if (el === canvas || (el && canvas.contains(el))) {
+    const pt = worldFromClient(t.clientX, t.clientY);
+    if (pt) { placeBunkerWithMirror(pendingType, pt); disarm(); }
+  }
+}, { passive: true });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DRAG-DROP FROM SIDEBAR (desktop)
+// ─────────────────────────────────────────────────────────────────────────────
+
+canvas.addEventListener('dragover', e => {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'copy';
+  if (!ghost3D && pendingType) createGhost3D(pendingType);
+  const pt = worldFromEvent(e);
+  if (pt && ghost3D) ghost3D.position.copy(pt);
+});
+canvas.addEventListener('dragleave', removeGhost);
+canvas.addEventListener('drop', e => {
+  e.preventDefault();
+  const type = e.dataTransfer.getData('bunkerType') || pendingType;
+  if (!type) return;
+  const pt = worldFromEvent(e);
+  if (!pt) { disarm(); return; }
+  placeBunkerWithMirror(type, pt);
+  disarm();
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PLACE / DELETE BUNKERS
+// ─────────────────────────────────────────────────────────────────────────────
+
+function placeBunkerWithMirror(type, pt) {
+  pushUndo();
+  placeBunker(type, pt, 0);
+  if (mirrorEnabled) {
+    const mp = new THREE.Vector3(pt.x, 0, -pt.z);
+    const mr = placeBunker(type, mp, 0);
+    if (mr) mr.scale.z = -1;
+  }
+}
+
+function placeBunker(type, pos, rotY = 0) {
+  const b = BUNKERS().find(x => x.id === type);
+  if (!b || !FACTORIES[type]) return null;
+  const g = FACTORIES[type](b.color);
+  g.position.copy(pos);
+  g.rotation.y = rotY;
+  g.userData.bunker = { ...b };  // clone so label edits are per-instance
+  g.userData.kind   = 'bunker';
+  g.traverse(c => {
+    if (c.isMesh) {
+      c.material.side = THREE.DoubleSide;
+      c.userData.root = g;
+    }
+  });
+  // Cache bounding box in LOCAL space (rotation=0) for OBB-based FPS collision
+  const _lb = new THREE.Box3();
+  g.traverse(c => {
+    if (c.isMesh && c.geometry) {
+      c.geometry.computeBoundingBox();
+      if (c.geometry.boundingBox) {
+        _lb.union(c.geometry.boundingBox.clone().applyMatrix4(c.matrix));
+      }
+    }
+  });
+  g.userData.localBox = _lb;
+  scene.add(g);
+  placed.push(g);
+  if (showLabels) attachLabel(g);
+  select(g);
+  return g;
+}
+
+function deleteObject(g) {
+  if (!g) return;
+  pushUndo();
+  if (selSet.size > 1) {
+    selSet.forEach(obj => {
+      scene.remove(obj);
+      placed  = placed.filter(x => x !== obj);
+      players = players.filter(x => x !== obj);
+    });
+    selSet.clear();
+    selected = null;
+    updateSelectedInfo();
+  } else {
+    scene.remove(g);
+    placed  = placed.filter(x => x !== g);
+    players = players.filter(x => x !== g);
+    selSet.delete(g);
+    if (selected === g) { selected = null; updateSelectedInfo(); }
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FLIP / DUPLICATE
+// ─────────────────────────────────────────────────────────────────────────────
+
+let toastTimer = null;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.classList.remove('show'); }, 1600);
+}
+
+function duplicateSelected() {
+  if (!selected || selected.userData.kind !== 'bunker') return;
+  pushUndo();
+  const g = placeBunker(selected.userData.bunker.id,
+    new THREE.Vector3(selected.position.x + 3, 0, selected.position.z + 3),
+    selected.rotation.y);
+  if (g) { g.scale.copy(selected.scale); }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PLAYER MARKERS — human figure
+// ─────────────────────────────────────────────────────────────────────────────
+
+const TEAM_COLORS = {
+  red:         0xff3b30,
+  blue:        0x0a84ff,
+  murder_inc:  0xc9a227,  // gold
+  carpinteros: 0x00a86b,  // Mexican flag green
+  '1s1k':      0x686868,  // dark grey
+  kaiju:       0x29b6f6,  // light blue
+};
+const TEAM_LABELS = {
+  red: 'Red', blue: 'Blue',
+  murder_inc: 'Murder Inc', carpinteros: 'Carpinteros',
+  '1s1k': '1S1K', kaiju: 'Kaiju',
+};
+
+function makeSpriteTexture(text, colHex) {
+  const size = 128;
+  const cvs  = document.createElement('canvas');
+  cvs.width  = size; cvs.height = size;
+  const ctx  = cvs.getContext('2d');
+  const hex  = '#' + colHex.toString(16).padStart(6, '0');
+  ctx.beginPath();
+  ctx.arc(size/2, size/2, size/2 - 4, 0, Math.PI * 2);
+  ctx.fillStyle = hex; ctx.fill();
+  ctx.strokeStyle = '#fff'; ctx.lineWidth = 7; ctx.stroke();
+  ctx.fillStyle = '#fff';
+  // Scale font to fit text in circle
+  const fs = text.length <= 2 ? Math.round(size * 0.44)
+           : text.length <= 5 ? Math.round(size * 0.28)
+           : Math.round(size * 0.20);
+  ctx.font = `bold ${fs}px -apple-system, sans-serif`;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  const display = text.length > 8 ? text.slice(0, 7) + '…' : text;
+  ctx.fillText(display, size/2, size/2 + 2);
+  return new THREE.CanvasTexture(cvs);
+}
+
+function refreshPlayerSprite(g) {
+  const col   = TEAM_COLORS[g.userData.team] ?? 0xffffff;
+  const label = g.userData.playerName || g.userData.weapon || '?';
+  const tex   = makeSpriteTexture(label, col);
+  g.traverse(c => {
+    if (c.isSprite) {
+      c.material.map?.dispose();
+      c.material.map = tex;
+      c.material.needsUpdate = true;
+      c.visible = showLabels;
+    }
+  });
+}
+
+// ── Sombrero for Carpinteros ─────────────────────────────────────────────────
+function makeSombrero() {
+  const grp = new THREE.Group();
+  const strawMat  = new THREE.MeshLambertMaterial({ color: 0xc8a83a });
+  const bandMat   = new THREE.MeshLambertMaterial({ color: 0x006847 }); // Mexican flag green
+  // Wide straw brim
+  const brim  = new THREE.Mesh(new THREE.CylinderGeometry(1.45, 1.55, 0.1, 28), strawMat);
+  brim.position.y = 0;
+  // Tall crown
+  const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.52, 0.65, 0.8, 18), strawMat);
+  crown.position.y = 0.45;
+  // Decorative band at base of crown
+  const band  = new THREE.Mesh(new THREE.CylinderGeometry(0.67, 0.67, 0.13, 18), bandMat);
+  band.position.y = 0.07;
+  grp.add(brim, crown, band);
+  return grp;
+}
+
+// ── Team-specific jersey materials ───────────────────────────────────────────
+const SERAPE_COLORS = [
+  0xcc0000, 0xff5500, 0xff9900, 0xffdd00,
+  0x33bb33, 0x0099dd, 0x7722cc, 0xff2277,
+  0xffffff, 0xffdd00, 0xff9900,
+];
+
+function addSerapeStripes(g) {
+  const STRIPE_H = 0.115;
+  const total    = SERAPE_COLORS.length * (STRIPE_H + 0.01);
+  const startY   = 4.30 - total / 2;
+  SERAPE_COLORS.forEach((col, i) => {
+    const m = new THREE.Mesh(
+      new THREE.BoxGeometry(1.07, STRIPE_H, 0.58),
+      new THREE.MeshLambertMaterial({ color: col })
+    );
+    m.position.set(0, startY + i * (STRIPE_H + 0.01), 0);
+    m.userData.root = g;
+    g.add(m);
+  });
+}
+
+// ── Build / rebuild player body meshes for a given stance ────────────────────
+// Returns the Y position where the name/weapon sprite should float.
+function buildPlayerMeshes(g, team, stance) {
+  const col      = TEAM_COLORS[team] ?? 0xffffff;
+  const isCarp   = (team === 'carpinteros');
+  // Carpinteros have dark-brown skin tone; other teams use their team colour
+  const bodyCol  = isCarp ? 0x6b3a1e : col;
+  const bm       = () => new THREE.MeshLambertMaterial({ color: bodyCol });
+
+  const add = (...meshes) => meshes.forEach(m => { m.userData.root = g; g.add(m); });
+
+  if (stance === 'crouching') {
+    // ── Low ready — compressed, torso pitched forward ─────────────────────
+    const legL = new THREE.Mesh(new THREE.BoxGeometry(0.42, 1.5, 0.48), bm());
+    legL.position.set(-0.28, 0.75, 0.18); legL.rotation.x = 0.45;
+    const legR = new THREE.Mesh(new THREE.BoxGeometry(0.42, 1.5, 0.48), bm());
+    legR.position.set( 0.28, 0.75, 0.18); legR.rotation.x = 0.45;
+    const hips  = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.5, 0.5), bm());
+    hips.position.set(0, 1.7, 0.22); hips.rotation.x = 0.3;
+    const torso = new THREE.Mesh(new THREE.BoxGeometry(1.05, 1.45, 0.55), bm());
+    torso.position.set(0, 2.55, 0.25); torso.rotation.x = 0.38;
+    const head  = new THREE.Mesh(new THREE.SphereGeometry(0.52, 10, 8), bm());
+    head.position.set(0, 3.45, 0.38);
+    const armL  = new THREE.Mesh(new THREE.BoxGeometry(0.32, 1.3, 0.38), bm());
+    armL.position.set(-0.72, 2.3, 0.4); armL.rotation.z = 0.5; armL.rotation.x = 0.55;
+    const armR  = new THREE.Mesh(new THREE.BoxGeometry(0.32, 1.3, 0.38), bm());
+    armR.position.set( 0.72, 2.3, 0.4); armR.rotation.z = -0.5; armR.rotation.x = 0.55;
+    add(legL, legR, hips, torso, head, armL, armR);
+    if (isCarp) {
+      addSerapeStripes(g);
+      const hat = makeSombrero(); hat.position.set(0, 4.2, 0.45); hat.rotation.x = 0.38;
+      hat.traverse(c => { if (c.isMesh) c.userData.root = g; }); g.add(hat);
+    }
+    return 5.0;
+
+  } else if (stance === 'crawling') {
+    // ── Prone — lying flat, head toward negative Z ────────────────────────
+    const body  = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.42, 2.8), bm());
+    body.position.set(0, 0.42, 0);
+    const head  = new THREE.Mesh(new THREE.SphereGeometry(0.46, 10, 8), bm());
+    head.position.set(0, 0.72, -1.7);
+    const armL  = new THREE.Mesh(new THREE.BoxGeometry(0.30, 0.36, 1.3), bm());
+    armL.position.set(-0.68, 0.42, -1.55);
+    const armR  = new THREE.Mesh(new THREE.BoxGeometry(0.30, 0.36, 1.3), bm());
+    armR.position.set( 0.68, 0.42, -1.55);
+    const legL  = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.38, 1.45), bm());
+    legL.position.set(-0.26, 0.3, 1.25);
+    const legR  = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.38, 1.45), bm());
+    legR.position.set( 0.26, 0.3, 1.25);
+    add(body, head, armL, armR, legL, legR);
+    if (isCarp) {
+      // Serape: horizontal stripes on the body
+      const STRIPE_H = 0.115;
+      SERAPE_COLORS.forEach((col, i) => {
+        const m = new THREE.Mesh(new THREE.BoxGeometry(0.97, 0.44, STRIPE_H),
+          new THREE.MeshLambertMaterial({ color: col }));
+        m.position.set(0, 0.44, -1.05 + i * (STRIPE_H + 0.01));
+        m.userData.root = g; g.add(m);
+      });
+      const hat = makeSombrero(); hat.position.set(0, 1.5, -1.7); hat.rotation.x = -Math.PI / 2;
+      hat.traverse(c => { if (c.isMesh) c.userData.root = g; }); g.add(hat);
+    }
+    return 2.2;
+
+  } else {
+    // ── Standing (default) ────────────────────────────────────────────────
+    const legL  = new THREE.Mesh(new THREE.BoxGeometry(0.38, 2.9, 0.44), bm());
+    legL.position.set(-0.27, 1.45, 0);
+    const legR  = new THREE.Mesh(new THREE.BoxGeometry(0.38, 2.9, 0.44), bm());
+    legR.position.set( 0.27, 1.45, 0);
+    const hips  = new THREE.Mesh(new THREE.BoxGeometry(0.92, 0.55, 0.5), bm());
+    hips.position.y = 3.22;
+    const torso = new THREE.Mesh(new THREE.BoxGeometry(1.05, 1.7, 0.55), bm());
+    torso.position.y = 4.30;
+    const head  = new THREE.Mesh(new THREE.SphereGeometry(0.52, 10, 8), bm());
+    head.position.y = 5.58;
+    const armL  = new THREE.Mesh(new THREE.BoxGeometry(0.32, 1.55, 0.38), bm());
+    armL.position.set(-0.75, 4.15, 0); armL.rotation.z =  0.25;
+    const armR  = new THREE.Mesh(new THREE.BoxGeometry(0.32, 1.55, 0.38), bm());
+    armR.position.set( 0.75, 4.15, 0); armR.rotation.z = -0.25;
+    add(legL, legR, hips, torso, head, armL, armR);
+    if (isCarp) {
+      addSerapeStripes(g);
+      const hat = makeSombrero(); hat.position.set(0, 6.3, 0);
+      hat.traverse(c => { if (c.isMesh) c.userData.root = g; }); g.add(hat);
+    }
+    return 7.6;
+  }
+}
+
+// ── Change a placed player's stance ──────────────────────────────────────────
+function setPlayerStance(g, stance, silent = false) {
+  if (!g || g.userData.kind !== 'player') return;
+  if (!silent) pushUndo();
+  g.userData.stance = stance;
+  // Remove all body children but keep the sprite and selection ring
+  const keep = new Set([g.userData._selRing]);
+  g.traverse(c => { if (c.isSprite) keep.add(c); });
+  const remove = g.children.filter(c => !keep.has(c));
+  remove.forEach(c => {
+    g.remove(c);
+    c.traverse(x => { if (x.geometry) x.geometry.dispose(); if (x.material && !x.material._shared) x.material.dispose(); });
+  });
+  const spriteH = buildPlayerMeshes(g, g.userData.team, stance);
+  // Reposition sprite
+  g.traverse(c => { if (c.isSprite) c.position.y = spriteH; });
+  updateSelectedInfo();
+}
+
+// ── Player ground elevation ────────────────────────────────────────────────
+// Shoot a ray straight down from y=100 at (x, z), intersect placed bunker
+// meshes, and return the world-Y of the highest hit surface (0 = floor).
+const _elevRay  = new THREE.Raycaster();
+const _elevOrig = new THREE.Vector3();
+const _elevDir  = new THREE.Vector3(0, -1, 0);
+
+function getPlayerGroundY(x, z) {
+  _elevOrig.set(x, 100, z);
+  _elevRay.set(_elevOrig, _elevDir);
+  const hits = _elevRay.intersectObjects(placed, true);
+  if (!hits.length) return 0;
+  // hits are sorted by distance; the first hit is the topmost surface
+  return Math.max(0, hits[0].point.y);
+}
+
+function placePlayer(pos) {
+  const g = new THREE.Group();
+  g.position.copy(pos);
+  // Elevate player to stand on top of whatever bunker is at this XZ position
+  g.position.y = getPlayerGroundY(pos.x, pos.z);
+  g.userData.kind       = 'player';
+  g.userData.team       = playerTeam;
+  g.userData.weapon     = playerWeapon;
+  g.userData.playerName = '';
+  g.userData.stance     = 'standing';
+
+  const spriteH = buildPlayerMeshes(g, playerTeam, 'standing');
+
+  // Weapon/name badge sprite
+  const col    = TEAM_COLORS[playerTeam] ?? 0xffffff;
+  const tex    = makeSpriteTexture(playerWeapon, col);
+  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false }));
+  sprite.scale.set(2.4, 2.4, 1);
+  sprite.position.y = spriteH;
+  sprite.visible = showLabels;
+  g.add(sprite);
+
+  scene.add(g);
+  players.push(g);
+  select(g);
+  return g;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RENAME BUNKER INSTANCE
+// Renames only the specific placed bunker — sidebar name is unchanged.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const renameModal  = document.getElementById('rename-modal');
+const renameInput  = document.getElementById('rename-input');
+let   renameTarget = null;   // the Three.js Group being renamed
+
+function openRenameModal(g) {
+  if (!g) return;
+  const k = g.userData.kind;
+  if (k !== 'bunker' && k !== 'player') return;
+  renameTarget = g;
+  sidebarRenameId = null;
+  if (k === 'player') {
+    renameInput.value = g.userData.playerName || '';
+    const hint = renameModal.querySelector('.rename-type-hint');
+    if (hint) hint.textContent = 'Set a display name for this player.';
+  } else {
+    renameInput.value = g.userData.bunker?.label || '';
+    const hint = renameModal.querySelector('.rename-type-hint');
+    if (hint) hint.textContent = 'Renames this bunker — sidebar is unchanged.';
+  }
+  renameModal.classList.add('open');
+  setTimeout(() => { renameInput.focus(); renameInput.select(); }, 60);
+}
+
+function closeRenameModal() {
+  renameModal.classList.remove('open');
+  renameTarget = null;
+  sidebarRenameId = null;
+}
+
+function applyRename() {
+  const newName = renameInput.value.trim();
+  if (!newName) { closeRenameModal(); return; }
+
+  if (sidebarRenameId) {
+    // Sidebar type rename — updates FIELD_DEFS, rebuilds sidebar, won't touch placed instances
+    const b = activeField().bunkers.find(x => x.id === sidebarRenameId);
+    if (b) b.label = newName;
+    closeRenameModal();
+    buildSidebar();
+  } else if (renameTarget) {
+    if (renameTarget.userData.kind === 'player') {
+      // Player rename — update name and refresh sprite
+      renameTarget.userData.playerName = newName;
+      refreshPlayerSprite(renameTarget);
+      updateSelectedInfo();
+      closeRenameModal();
+      pushUndo();
+    } else {
+      // Per-instance bunker rename — sidebar unchanged
+      renameTarget.userData.bunker = { ...renameTarget.userData.bunker, label: newName };
+      if (showLabels) attachLabel(renameTarget);
+      updateSelectedInfo();
+      closeRenameModal();
+      pushUndo();
+    }
+  } else {
+    closeRenameModal();
+  }
+}
+
+document.getElementById('rename-cancel').addEventListener('click', closeRenameModal);
+document.getElementById('rename-confirm').addEventListener('click', applyRename);
+renameInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter') applyRename();
+  if (e.key === 'Escape') closeRenameModal();
+});
+renameModal.addEventListener('click', e => { if (e.target === renameModal) closeRenameModal(); });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SELECTION + HIGHLIGHT
+// ─────────────────────────────────────────────────────────────────────────────
+
+const HIGHLIGHT = 0x774400;   // subtle warm emissive tint
+
+function highlightObj(g) {
+  g.traverse(c => {
+    if (c.isMesh && !(c.material instanceof THREE.SpriteMaterial)) {
+      if (!c.userData._matCloned) {
+        c.material = c.material.clone();
+        c.userData._matCloned = true;
+        c.userData._em = c.material.emissive ? c.material.emissive.getHex() : 0;
+      }
+      if (c.material.emissive) c.material.emissive.setHex(HIGHLIGHT);
+    }
+  });
+  // Bright cyan selection ring at the bunker's base — immediately obvious
+  if (!g.userData._selRing) {
+    const ring = new THREE.Mesh(
+      new THREE.RingGeometry(2.5, 3.5, 40),
+      new THREE.MeshBasicMaterial({
+        color: 0x00e5ff, side: THREE.DoubleSide,
+        transparent: true, opacity: 0.9, depthWrite: false
+      })
+    );
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.y = 0.12;
+    ring.userData.root = g; // keep hit-testing working when ring is clicked
+    g.add(ring);
+    g.userData._selRing = ring;
+  }
+}
+
+function unhighlightObj(g) {
+  g.traverse(c => {
+    if (c.isMesh && c.userData._em !== undefined && c.material.emissive) {
+      c.material.emissive.setHex(c.userData._em);
+      c.userData._matCloned = false;
+    }
+  });
+  if (g.userData._selRing) {
+    g.remove(g.userData._selRing);
+    g.userData._selRing.geometry.dispose();
+    g.userData._selRing.material.dispose();
+    g.userData._selRing = null;
+  }
+}
+
+function select(g, addToSet = false) {
+  if (!addToSet) {
+    // Clear existing selection
+    selSet.forEach(obj => { if (obj !== g) unhighlightObj(obj); });
+    selSet.clear();
+    if (selected && selected !== g) unhighlightObj(selected);
+  }
+  selected = g;
+  selSet.add(g);
+  highlightObj(g);
+  updateSelectedInfo();
+}
+
+function deselect() {
+  selSet.forEach(g => unhighlightObj(g));
+  selSet.clear();
+  selected = null;
+  updateSelectedInfo();
+}
+
+function selectBox(rect) {
+  // rect is canvas-relative {x,y,w,h}
+  const canvasRect = canvas.getBoundingClientRect();
+  deselect();
+  const candidates = [...placed, ...players];
+  candidates.forEach(g => {
+    const pos = g.position.clone();
+    const ndc = pos.project(camera);
+    const sx = (ndc.x * 0.5 + 0.5) * canvasRect.width;
+    const sy = (-ndc.y * 0.5 + 0.5) * canvasRect.height;
+    if (sx >= rect.x && sx <= rect.x + rect.w && sy >= rect.y && sy <= rect.y + rect.h) {
+      selSet.add(g);
+      highlightObj(g);
+      selected = g; // last one becomes primary
+    }
+  });
+  updateSelectedInfo();
+}
+
+function updateSelectedInfo() {
+  const el = document.getElementById('selected-info');
+  if (!selected) { el.style.display = 'none'; return; }
+  const k = selected.userData.kind;
+  let label = '';
+  if (k === 'bunker') {
+    const name = selected.userData.bunker?.label;
+    label = isMobile()
+      ? `${name} — toolbar to rotate/delete · double-tap or long-press to rename`
+      : `${name} — R/E rotate · Del remove · double-click or right-click to rename`;
+  }
+  if (k === 'player') {
+    const t      = TEAM_LABELS[selected.userData.team] ?? selected.userData.team;
+    const name   = selected.userData.playerName ? ` "${selected.userData.playerName}"` : '';
+    const stance = selected.userData.stance || 'standing';
+    label = isMobile()
+      ? `${t} ${selected.userData.weapon}${name} [${stance}] — drag · CW/CCW rotate · long-press for options`
+      : `${t} ${selected.userData.weapon}${name} [${stance}] — drag · R/E or CW/CCW rotate · Del remove · right-click for options`;
+  }
+  el.textContent = label;
+  el.style.display = 'block';
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// POINTER EVENTS
+// ─────────────────────────────────────────────────────────────────────────────
+
+let lastClickTime = 0;
+let lastClickObj  = null;
+
+canvas.addEventListener('pointerdown', e => {
+  if (e.button !== 0) return;
+  if (mode === 'arrow') return;
+  if (walkMode) {
+    // In walk mode, left click fires BB
+    fireBB();
+    return;
+  }
+  ptrDown = { x: e.clientX, y: e.clientY };
+  canvas.setPointerCapture(e.pointerId);
+  closeCtxMenu();
+
+  // Player drop
+  if (mode === 'player') {
+    const pt = worldFromEvent(e);
+    if (pt) { pushUndo(); placePlayer(pt); }
+    return;
+  }
+
+  // Select mode: hit test
+  raycaster.setFromCamera(ndcFromEvent(e), camera);
+  const pickMeshes = [];
+  [...placed, ...players].forEach(g => g.traverse(c => { if (c.isMesh) pickMeshes.push(c); }));
+  const hits = raycaster.intersectObjects(pickMeshes);
+
+  if (hits.length) {
+    const g = hits[0].object.userData.root;
+    if (!g) return;
+    select(g, e.shiftKey);
+
+    // Double-click to rename this bunker instance
+    const now = Date.now();
+    if (g === lastClickObj && now - lastClickTime < 400 && g.userData.kind === 'bunker') {
+      openRenameModal(g);
+    }
+    lastClickTime = now;
+    lastClickObj  = g;
+
+    isDraggingBunker = true;
+    controls.enabled = false;
+    const pt = new THREE.Vector3();
+    raycaster.ray.intersectPlane(fieldPlane, pt);
+    dragOffset.copy(g.position).sub(pt);
+    dragOffset.y = 0;
+    disarm();
+  } else if (pendingType) {
+    isPendingPlace   = true;
+    controls.enabled = false;
+  } else {
+    // Box-select: desktop/mouse only — on touch let OrbitControls handle pan/rotate
+    if (mode === 'select' && e.pointerType !== 'touch') {
+      const r = canvas.getBoundingClientRect();
+      boxStart = { x: e.clientX - r.left, y: e.clientY - r.top };
+      boxSelecting = true;
+      boxEl.style.cssText = `display:block;left:${boxStart.x}px;top:${boxStart.y}px;width:0;height:0;`;
+      controls.enabled = false;
+    }
+    if (!e.shiftKey) deselect();
+  }
+});
+
+canvas.addEventListener('pointermove', e => {
+  if (isDraggingBunker && selected) {
+    const moved = Math.abs(e.clientX - ptrDown.x) + Math.abs(e.clientY - ptrDown.y);
+    if (moved < 3) return;
+    raycaster.setFromCamera(ndcFromEvent(e), camera);
+    const pt = new THREE.Vector3();
+    if (!raycaster.ray.intersectPlane(fieldPlane, pt)) return;
+    let x = pt.x + dragOffset.x;
+    let z = pt.z + dragOffset.z;
+    if (snapEnabled) {
+      const s = 2.5;
+      x = Math.round(x / s) * s;
+      z = Math.round(z / s) * s;
+    }
+    x = Math.max(-hw, Math.min(hw, x));
+    z = Math.max(-hh, Math.min(hh, z));
+    if (selSet.size > 1) {
+      // Move all selected by delta
+      const dx = x - selected.position.x;
+      const dz = z - selected.position.z;
+      selSet.forEach(g => {
+        g.position.x = Math.max(-hw, Math.min(hw, g.position.x + dx));
+        g.position.z = Math.max(-hh, Math.min(hh, g.position.z + dz));
+        // Elevate players in multi-select over bunkers too
+        if (g.userData.kind === 'player') g.position.y = getPlayerGroundY(g.position.x, g.position.z);
+      });
+    } else {
+      const groundY = selected.userData.kind === 'player' ? getPlayerGroundY(x, z) : 0;
+      selected.position.set(x, groundY, z);
+    }
+  }
+  if (isPendingPlace && ghost3D) {
+    const pt = worldFromEvent(e);
+    if (pt) ghost3D.position.copy(pt);
+  }
+  if (boxSelecting) {
+    const r = canvas.getBoundingClientRect();
+    const cx = e.clientX - r.left;
+    const cy = e.clientY - r.top;
+    const x = Math.min(cx, boxStart.x);
+    const y = Math.min(cy, boxStart.y);
+    const w = Math.abs(cx - boxStart.x);
+    const h = Math.abs(cy - boxStart.y);
+    boxEl.style.left = x + 'px'; boxEl.style.top = y + 'px';
+    boxEl.style.width = w + 'px'; boxEl.style.height = h + 'px';
+  }
+});
+
+canvas.addEventListener('pointerup', e => {
+  if (isDraggingBunker) {
+    isDraggingBunker = false;
+    controls.enabled = true;
+    const moved = Math.abs(e.clientX - ptrDown.x) + Math.abs(e.clientY - ptrDown.y);
+    if (moved > 5) pushUndo();
+  }
+  if (isPendingPlace) {
+    isPendingPlace   = false;
+    controls.enabled = true;
+    const moved = Math.abs(e.clientX - ptrDown.x) + Math.abs(e.clientY - ptrDown.y);
+    if (moved < 10 && pendingType) {
+      const pt = worldFromEvent(e);
+      if (pt) { placeBunkerWithMirror(pendingType, pt); disarm(); }
+    }
+  }
+  if (boxSelecting) {
+    boxSelecting = false;
+    controls.enabled = true;
+    const r = canvas.getBoundingClientRect();
+    const cx = e.clientX - r.left;
+    const cy = e.clientY - r.top;
+    const x = Math.min(cx, boxStart.x);
+    const y = Math.min(cy, boxStart.y);
+    const w = Math.abs(cx - boxStart.x);
+    const h = Math.abs(cy - boxStart.y);
+    boxEl.style.display = 'none';
+    if (w > 5 && h > 5) selectBox({ x, y, w, h });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TOOLBAR BUTTONS
+// ─────────────────────────────────────────────────────────────────────────────
+
+document.getElementById('btn-rcw').addEventListener('click', () => {
+  if (selected) {
+    pushUndo();
+    if (selSet.size > 1) selSet.forEach(g => { g.rotation.y -= Math.PI / 12; });
+    else selected.rotation.y -= Math.PI / 12;
+  }
+});
+document.getElementById('btn-rccw').addEventListener('click', () => {
+  if (selected) {
+    pushUndo();
+    if (selSet.size > 1) selSet.forEach(g => { g.rotation.y += Math.PI / 12; });
+    else selected.rotation.y += Math.PI / 12;
+  }
+});
+document.getElementById('btn-del').addEventListener('click', () => { if (selected) deleteObject(selected); });
+document.getElementById('btn-clear').addEventListener('click', () => {
+  if (!confirm('Clear all bunkers and players?')) return;
+  pushUndo();
+  [...placed, ...players].forEach(g => scene.remove(g));
+  placed = []; players = [];
+  deselect();
+});
+
+// Labels
+const labelsBtn = document.getElementById('btn-labels');
+labelsBtn.addEventListener('click', () => {
+  showLabels = !showLabels;
+  labelsBtn.textContent = `Labels: ${showLabels ? 'ON' : 'OFF'}`;
+  labelsBtn.classList.toggle('on', showLabels);
+  refreshLabels();
+});
+
+// Bunkers: CLR / BLK toggle
+const bunkersBlackBtn = document.getElementById('btn-bunkers-black');
+bunkersBlackBtn.addEventListener('click', () => {
+  bunkersBlack = !bunkersBlack;
+  bunkersBlackBtn.textContent = `Bunkers: ${bunkersBlack ? 'BLK' : 'CLR'}`;
+  bunkersBlackBtn.classList.toggle('on', bunkersBlack);
+  applyBunkerColors();
+});
+
+// Screenshot
+document.getElementById('btn-screenshot').addEventListener('click', takeScreenshot);
+
+// Undo / Redo
+document.getElementById('btn-undo').addEventListener('click', undo);
+document.getElementById('btn-redo').addEventListener('click', redo);
+
+// Export / Import moved to sidebar (see buildSidebar)
+document.getElementById('btn-top').addEventListener('click', () => {
+  camera.position.set(0, FH * 1.1, 0.01);
+  controls.target.set(0, 0, 0); controls.update();
+});
+document.getElementById('btn-3d').addEventListener('click', () => {
+  camera.position.set(0, FH * 0.5, FH * 0.65);
+  controls.target.set(0, 0, 0); controls.update();
+});
+
+const snapBtn = document.getElementById('btn-snap');
+snapBtn.addEventListener('click', () => {
+  snapEnabled = !snapEnabled;
+  snapBtn.textContent = `Snap: ${snapEnabled ? 'ON' : 'OFF'}`;
+  snapBtn.classList.toggle('on', snapEnabled);
+});
+snapBtn.classList.add('on');
+
+const mirrorBtn = document.getElementById('btn-mirror');
+mirrorBtn.addEventListener('click', () => {
+  mirrorEnabled = !mirrorEnabled;
+  mirrorBtn.textContent = `Mirror: ${mirrorEnabled ? 'ON' : 'OFF'}`;
+  mirrorBtn.classList.toggle('on', mirrorEnabled);
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PLAYER PANEL BUTTONS
+// ─────────────────────────────────────────────────────────────────────────────
+
+document.querySelectorAll('.team-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    playerTeam = btn.dataset.team;
+    document.querySelectorAll('.team-btn').forEach(b => b.classList.toggle('on', b === btn));
+  });
+});
+document.querySelectorAll('.weapon-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    playerWeapon = btn.dataset.weapon;
+    document.querySelectorAll('.weapon-btn').forEach(b => b.classList.toggle('on', b === btn));
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RIGHT-CLICK CONTEXT MENU
+// ─────────────────────────────────────────────────────────────────────────────
+
+const ctxMenu = document.getElementById('ctx-menu');
+let ctxRightPtrDown = { x: 0, y: 0 };
+
+canvas.addEventListener('pointerdown', e => {
+  if (e.button === 2) { ctxRightPtrDown = { x: e.clientX, y: e.clientY }; }
+});
+
+canvas.addEventListener('contextmenu', e => {
+  e.preventDefault();
+  if (walkMode) return;
+  const moved = Math.abs(e.clientX - ctxRightPtrDown.x) + Math.abs(e.clientY - ctxRightPtrDown.y);
+  if (moved > 5) return; // was an orbit drag
+
+  // Hit test
+  raycaster.setFromCamera(ndcFromClient(e.clientX, e.clientY), camera);
+  const pickMeshes = [];
+  [...placed, ...players].forEach(g => g.traverse(c => { if (c.isMesh) pickMeshes.push(c); }));
+  const hits = raycaster.intersectObjects(pickMeshes);
+  if (hits.length) {
+    const g = hits[0].object.userData.root;
+    if (g) select(g);
+  }
+  if (!selected) return;
+
+  ctxMenu.style.left = e.clientX + 'px';
+  ctxMenu.style.top  = e.clientY + 'px';
+  ctxMenu.classList.add('open');
+  document.getElementById('ctx-rename').style.display =
+    (selected.userData.kind === 'bunker' || selected.userData.kind === 'player') ? 'block' : 'none';
+  document.getElementById('ctx-stance-group').style.display =
+    selected.userData.kind === 'player' ? 'block' : 'none';
+});
+
+function closeCtxMenu() { ctxMenu.classList.remove('open'); }
+document.addEventListener('pointerdown', e => {
+  if (!ctxMenu.contains(e.target)) closeCtxMenu();
+}, true);
+
+// Long-press on canvas for context menu on touch devices (500ms)
+let longPressTimer = null;
+let longPressPos   = null;
+canvas.addEventListener('touchstart', e => {
+  if (walkMode || mode !== 'select') return;
+  const t = e.touches[0];
+  longPressPos = { x: t.clientX, y: t.clientY };
+  longPressTimer = setTimeout(() => {
+    // Simulate contextmenu at long-press position
+    canvas.dispatchEvent(new MouseEvent('contextmenu', {
+      bubbles: true, cancelable: true,
+      clientX: longPressPos.x, clientY: longPressPos.y
+    }));
+    longPressTimer = null;
+  }, 500);
+}, { passive: true });
+canvas.addEventListener('touchmove', e => {
+  const t = e.touches[0];
+  if (longPressPos && (Math.abs(t.clientX - longPressPos.x) + Math.abs(t.clientY - longPressPos.y)) > 8) {
+    clearTimeout(longPressTimer); longPressTimer = null;
+  }
+}, { passive: true });
+canvas.addEventListener('touchend', () => {
+  clearTimeout(longPressTimer); longPressTimer = null;
+}, { passive: true });
+
+document.getElementById('ctx-rename').addEventListener('click', () => {
+  closeCtxMenu();
+  openRenameModal(selected);
+});
+document.getElementById('ctx-duplicate').addEventListener('click', () => {
+  closeCtxMenu(); duplicateSelected();
+});
+document.getElementById('ctx-delete').addEventListener('click', () => {
+  closeCtxMenu(); if (selected) deleteObject(selected);
+});
+document.getElementById('ctx-stance-stand').addEventListener('click', () => {
+  closeCtxMenu(); setPlayerStance(selected, 'standing');
+});
+document.getElementById('ctx-stance-crouch').addEventListener('click', () => {
+  closeCtxMenu(); setPlayerStance(selected, 'crouching');
+});
+document.getElementById('ctx-stance-crawl').addEventListener('click', () => {
+  closeCtxMenu(); setPlayerStance(selected, 'crawling');
+});
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// KEYBOARD SHORTCUTS
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FPS WALK MODE
+// Toggle: Walk button or F key.
+// Look: hold left mouse button + drag (tracks clientX/Y delta — no Pointer Lock)
+// Move: WASD / arrows · Space=up · Shift=down · F or Esc=exit
+// ─────────────────────────────────────────────────────────────────────────────
+
+let walkMode   = false;
+let fpsYaw     = 0;
+let fpsPitch   = 0;
+let fpsLooking = false;
+let fpsPrevX   = 0;
+let fpsPrevY   = 0;
+const keysHeld = new Set();
+const WALK_KEYS = new Set(['w','a','s','d','ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' ','Shift','c','C','z','Z']);
+
+// FPS physics state
+const EYE_HEIGHTS = { stand: 5.3, crouch: 3.0, crawl: 1.0 };
+let fpsState  = 'stand';   // 'stand' | 'crouch' | 'crawl' | 'dive' | 'slide'
+let fpsEyeH   = 1.7;       // current eye height (lerps)
+let vertVel   = 0;         // vertical velocity for jump/gravity
+let fpsOnGround = true;
+let diveMomentum = 0;      // for dive/slide decay
+let diveDirX  = 0;
+let diveDirZ  = 0;
+
+const walkBtn = document.getElementById('btn-walk');
+
+function enterWalkMode() {
+  walkMode = true;
+  walkBtn.classList.add('on');
+  document.body.classList.add('walk-mode');
+
+  // ── Teleport to ground level ──────────────────────────────────────────────
+  // If the camera is way up in orbit view, drop it to the near edge of the
+  // field so the player immediately sees the field from inside at eye level.
+  const halfLen = (FH || 30) / 2;
+  camera.position.set(
+    Math.max(-halfLen * 0.9, Math.min(halfLen * 0.9, camera.position.x)),
+    EYE_HEIGHTS.stand,
+    Math.max(-halfLen * 0.9, Math.min(halfLen * 0.9, camera.position.z))
+  );
+
+  // ── Look forward (0 pitch, preserve XZ look dir or default forward) ───────
+  fpsYaw   = 0;      // look toward -Z (into the field)
+  fpsPitch = 0;      // level horizon
+  fpsState = 'stand';
+  fpsEyeH  = EYE_HEIGHTS.stand;
+  vertVel  = 0;
+  fpsOnGround = true;
+  diveMomentum = 0;
+
+  // Immediately apply rotation so first frame isn't wrong
+  camera.rotation.order = 'YXZ';
+  camera.rotation.y = fpsYaw;
+  camera.rotation.x = fpsPitch;
+  camera.rotation.z = 0;
+
+  // Seed mouse prev-position to centre of viewport (fallback path)
+  fpsPrevX = window.innerWidth / 2;
+  fpsPrevY = window.innerHeight / 2;
+
+  controls.enabled = false;
+
+  // Request pointer lock so cursor is hidden and movement is unbounded
+  requestFpsPointerLock();
+}
+
+function exitWalkMode() {
+  walkMode   = false;
+  fpsLooking = false;
+  walkBtn.classList.remove('on');
+  document.body.classList.remove('walk-mode');
+  keysHeld.clear();
+  // Release pointer lock if held
+  if (document.pointerLockElement === canvas) {
+    document.exitPointerLock();
+  }
+  fpsPointerLocked = false;
+  // Snap back to standard 3D overview (same as clicking the 3D button)
+  camera.position.set(0, FH * 0.5, FH * 0.65);
+  controls.target.set(0, 0, 0);
+  controls.enabled = true;
+  controls.update();
+}
+
+walkBtn.addEventListener('click', () => {
+  if (walkMode) { exitWalkMode(); return; }
+  // FPS mode needs a mouse for look/pointer-lock — warn on touch-only devices
+  if (window.matchMedia('(hover: none) and (pointer: coarse)').matches) {
+    showToast('FPS mode requires a mouse — use on desktop');
+    return;
+  }
+  enterWalkMode();
+});
+
+// ── Pointer Lock mouse look ────────────────────────────────────────────────
+// When walk mode is active we request Pointer Lock so the cursor is hidden
+// and deltas are unbounded — the player can look 360° without hitting the
+// screen edge.  If Pointer Lock is unavailable (e.g. cross-origin iframe)
+// we fall back to tracking absolute mouse position.
+
+let fpsPointerLocked = false;
+
+function requestFpsPointerLock() {
+  if (canvas.requestPointerLock) {
+    canvas.requestPointerLock({ unadjustedMovement: true })
+      .catch(() => canvas.requestPointerLock().catch(() => {}));
+  }
+}
+
+document.addEventListener('pointerlockchange', () => {
+  const wasLocked = fpsPointerLocked;
+  fpsPointerLocked = (document.pointerLockElement === canvas);
+  // When the browser releases pointer lock (e.g. user pressed Escape, which
+  // browsers intercept before firing the keydown event), exit FPS mode in
+  // one step so the user doesn't need to press Escape twice.
+  if (wasLocked && !fpsPointerLocked && walkMode) {
+    exitWalkMode();
+  }
+});
+
+// Click canvas to (re-)acquire pointer lock while in walk mode
+canvas.addEventListener('click', () => {
+  if (walkMode && !fpsPointerLocked) requestFpsPointerLock();
+});
+
+document.addEventListener('mousemove', e => {
+  if (!walkMode) return;
+  const sens = 0.0025;
+  let dx, dy;
+  if (fpsPointerLocked) {
+    // Infinite movement — ideal
+    dx = e.movementX;
+    dy = e.movementY;
+  } else {
+    // Fallback: absolute delta tracking
+    dx = e.clientX - fpsPrevX;
+    dy = e.clientY - fpsPrevY;
+    fpsPrevX = e.clientX;
+    fpsPrevY = e.clientY;
+  }
+  fpsYaw   -= dx * sens;
+  fpsPitch -= dy * sens;
+  fpsPitch  = Math.max(-Math.PI / 2 + 0.05, Math.min(Math.PI / 2 - 0.05, fpsPitch));
+});
+
+function applyFpsCamera() {
+  if (!walkMode) return;
+
+  // Apply rotation directly — do NOT touch controls.target
+  camera.rotation.order = 'YXZ';
+  camera.rotation.y = fpsYaw;
+  camera.rotation.x = fpsPitch;
+  camera.rotation.z = 0;
+
+  // Determine base speed
+  const isSprinting = keysHeld.has('Shift');
+  const baseSpeed = 0.3 * (isSprinting ? 2 : 1);
+
+  const flat  = new THREE.Vector3(-Math.sin(fpsYaw), 0, -Math.cos(fpsYaw));
+  const right = new THREE.Vector3().crossVectors(flat, new THREE.Vector3(0,1,0)).normalize();
+  const move  = new THREE.Vector3();
+
+  if (keysHeld.has('w') || keysHeld.has('ArrowUp'))    move.addScaledVector(flat,   baseSpeed);
+  if (keysHeld.has('s') || keysHeld.has('ArrowDown'))  move.addScaledVector(flat,  -baseSpeed);
+  if (keysHeld.has('d') || keysHeld.has('ArrowRight')) move.addScaledVector(right,  baseSpeed);
+  if (keysHeld.has('a') || keysHeld.has('ArrowLeft'))  move.addScaledVector(right, -baseSpeed);
+
+  // Dive/slide momentum decay
+  if (diveMomentum > 0) {
+    move.x += diveDirX * diveMomentum;
+    move.z += diveDirZ * diveMomentum;
+    diveMomentum = Math.max(0, diveMomentum - 0.015);
+    if (diveMomentum <= 0) {
+      if (fpsState === 'dive')  { fpsState = 'crawl'; }
+      if (fpsState === 'slide') { fpsState = 'crouch'; }
+    }
+  }
+
+  camera.position.add(move);
+
+  // Field boundary clamp — keep the player inside the field
+  camera.position.x = Math.max(-hw + 1, Math.min(hw - 1, camera.position.x));
+  camera.position.z = Math.max(-hh + 1, Math.min(hh - 1, camera.position.z));
+
+  // Bunker collision — test in the bunker's LOCAL space so rotation is respected (OBB)
+  const PLAYER_RADIUS = 1.2;
+  const _invMat   = new THREE.Matrix4();
+  const _localCam = new THREE.Vector3();
+  const _pushDir  = new THREE.Vector3();
+  for (const g of placed) {
+    const lb = g.userData.localBox;
+    if (!lb) continue;
+    g.updateWorldMatrix(true, false);
+    _invMat.copy(g.matrixWorld).invert();
+    _localCam.copy(camera.position).applyMatrix4(_invMat);
+    const lx = _localCam.x, lz = _localCam.z;
+    if (lx > lb.min.x - PLAYER_RADIUS && lx < lb.max.x + PLAYER_RADIUS &&
+        lz > lb.min.z - PLAYER_RADIUS && lz < lb.max.z + PLAYER_RADIUS) {
+      const cx = (lb.min.x + lb.max.x) / 2, cz = (lb.min.z + lb.max.z) / 2;
+      const halfW = (lb.max.x - lb.min.x) / 2 + PLAYER_RADIUS;
+      const halfD = (lb.max.z - lb.min.z) / 2 + PLAYER_RADIUS;
+      const ox = halfW - Math.abs(lx - cx);
+      const oz = halfD - Math.abs(lz - cz);
+      if (ox < oz) _pushDir.set(Math.sign(lx - cx), 0, 0);
+      else         _pushDir.set(0, 0, Math.sign(lz - cz));
+      _pushDir.transformDirection(g.matrixWorld);
+      camera.position.addScaledVector(_pushDir, Math.min(ox, oz));
+    }
+  }
+
+  // Gravity + jump  (units = ft, ~32 ft/s² gravity scaled to per-frame)
+  if (!fpsOnGround) {
+    vertVel -= 0.018;   // ~32 ft/s² at 60 fps → 0.009 per frame; 0.018 feels snappier
+  }
+  camera.position.y += vertVel;
+
+  // Floor clamp
+  const targetEye = EYE_HEIGHTS[fpsState === 'dive' ? 'crawl' : fpsState === 'slide' ? 'crouch' : fpsState] || EYE_HEIGHTS.stand;
+  fpsEyeH = fpsEyeH + (targetEye - fpsEyeH) * 0.12;
+  const floor = fpsEyeH;
+  if (camera.position.y <= floor) {
+    camera.position.y = floor;
+    vertVel = 0;
+    fpsOnGround = true;
+  } else {
+    fpsOnGround = false;
+  }
+
+  // Update walk banner
+  updateWalkBanner();
+}
+
+function updateWalkBanner() {
+  const stateLabel = fpsState === 'stand' ? 'Standing' : fpsState === 'crouch' ? 'Crouching' : fpsState === 'crawl' ? 'Crawling' : fpsState === 'dive' ? 'Diving' : 'Sliding';
+  document.getElementById('walk-banner').textContent =
+    `FPS Mode [${stateLabel}] — Move mouse to look · WASD=move · Shift=sprint · C=crouch · Z=crawl · Space=jump · Click=shoot · F or Esc=exit`;
+}
+
+// Keyboard — use document listener so focus on any element works
+document.addEventListener('keydown', e => {
+  if (renameModal.classList.contains('open')) return;
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') return;
+
+  // Track movement keys in both FPS and orbit freecam modes
+  const MOVE_KEYS = ['w','a','s','d','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'];
+  if (MOVE_KEYS.includes(e.key) && !e.ctrlKey && !e.metaKey) {
+    keysHeld.add(e.key);
+    if (walkMode) e.preventDefault();
+  }
+  // Space=up / Shift=down for 3D orbit freecam
+  if (!walkMode && (e.key === ' ' || e.key === 'Shift') && !e.ctrlKey && !e.metaKey) {
+    keysHeld.add(e.key);
+    if (e.key === ' ') e.preventDefault(); // prevent page scroll
+  }
+
+  if (walkMode) {
+    if (WALK_KEYS.has(e.key)) { keysHeld.add(e.key); /* already added above */ }
+    if (e.key === 'Escape' || e.key === 'f' || e.key === 'F') { exitWalkMode(); return; }
+    if (e.key === 'c' || e.key === 'C') {
+      const isSprinting = keysHeld.has('Shift');
+      if (isSprinting && (fpsState === 'stand' || fpsState === 'crouch')) {
+        // Slide
+        const flat = new THREE.Vector3(-Math.sin(fpsYaw), 0, -Math.cos(fpsYaw));
+        fpsState = 'slide'; diveMomentum = 0.45; diveDirX = flat.x; diveDirZ = flat.z;
+      } else {
+        fpsState = (fpsState === 'crouch') ? 'stand' : 'crouch';
+      }
+      e.preventDefault(); return;
+    }
+    if (e.key === 'z' || e.key === 'Z') {
+      const isSprinting = keysHeld.has('Shift');
+      if (isSprinting && (fpsState === 'stand' || fpsState === 'crawl')) {
+        // Dive
+        const flat = new THREE.Vector3(-Math.sin(fpsYaw), 0, -Math.cos(fpsYaw));
+        fpsState = 'dive'; diveMomentum = 0.55; diveDirX = flat.x; diveDirZ = flat.z;
+      } else {
+        fpsState = (fpsState === 'crawl') ? 'stand' : 'crawl';
+      }
+      e.preventDefault(); return;
+    }
+    if (e.key === ' ') {
+      // vertVel = sqrt(2 * gravity * jumpHeight) = sqrt(2 * 0.018 * 1.5) ≈ 0.232
+      if (fpsOnGround) { vertVel = 0.232; fpsOnGround = false; }
+      e.preventDefault();
+    }
+    return;
+  }
+
+  if (e.key === 'f' || e.key === 'F') { enterWalkMode(); return; }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); undo(); return; }
+  if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && e.key === 'z'))) { e.preventDefault(); redo(); return; }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'd') { e.preventDefault(); duplicateSelected(); return; }
+  if (e.key === 'Delete' || e.key === 'Backspace') { if (selected) deleteObject(selected); }
+  if (e.key === 'r' || e.key === 'R') {
+    if (selected) {
+      pushUndo();
+      if (selSet.size > 1) selSet.forEach(g => { g.rotation.y -= Math.PI / 12; });
+      else selected.rotation.y -= Math.PI / 12;
+    }
+  }
+  if (e.key === 'e' || e.key === 'E') {
+    if (selected) {
+      pushUndo();
+      if (selSet.size > 1) selSet.forEach(g => { g.rotation.y += Math.PI / 12; });
+      else selected.rotation.y += Math.PI / 12;
+    }
+  }
+  if (e.key === '1') setMode('select');
+  if (e.key === '2') setMode('player');
+  if (e.key === '3') setMode('arrow');
+  if (e.key === 'Escape') { deselect(); disarm(); setMode('select'); }
+});
+
+document.addEventListener('keyup', e => keysHeld.delete(e.key));
+window.addEventListener('blur',    ()  => keysHeld.clear());
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BB SHOOTING SIMULATOR
+// ─────────────────────────────────────────────────────────────────────────────
+
+const activeBBs = [];
+const BB_SPEED  = 5.2;   // units/frame (~313 ft/s at 60fps)
+const BB_GRAV   = 32 / 3600; // ft/s² expressed as units/frame²
+const BB_RANGE  = 200;
+const BB_HOVER  = 100;   // hop-up flat distance (units)
+
+const bbMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+const bbGeo = new THREE.SphereGeometry(0.05, 6, 4);
+const bbFlashMat = new THREE.MeshBasicMaterial({ color: 0xffff88, transparent: true, opacity: 0.9 });
+
+function fireBB() {
+  if (!walkMode) return;
+  const dir = new THREE.Vector3();
+  camera.getWorldDirection(dir);
+  const spawnPos = camera.position.clone().addScaledVector(dir, 0.5);
+  const bb = new THREE.Mesh(bbGeo, bbMat.clone());
+  bb.position.copy(spawnPos);
+  const vel = dir.clone().multiplyScalar(BB_SPEED);
+  bb.userData.vel = vel;
+  bb.userData.distTraveled = 0;
+  bb.userData.startPos = spawnPos.clone();
+  scene.add(bb);
+  activeBBs.push(bb);
+}
+
+function updateBBs() {
+  const toRemove = [];
+  for (const bb of activeBBs) {
+    const prevPos = bb.position.clone();
+
+    // Hop-up: suppress gravity for first BB_HOVER units
+    if (bb.userData.distTraveled > BB_HOVER) {
+      bb.userData.vel.y -= BB_GRAV;
+    }
+    bb.position.addScaledVector(bb.userData.vel, 1);
+    bb.userData.distTraveled += BB_SPEED;
+
+    // Ground hit
+    if (bb.position.y <= 0) { bbImpact(bb.position.clone()); toRemove.push(bb); continue; }
+
+    // Range check
+    if (bb.userData.distTraveled > BB_RANGE) { toRemove.push(bb); continue; }
+
+    // Bunker hit test (simple sphere vs AABB)
+    let hit = false;
+    const bbBox = new THREE.Box3().setFromCenterAndSize(bb.position, new THREE.Vector3(0.3, 0.3, 0.3));
+    for (const g of placed) {
+      const gBox = new THREE.Box3().setFromObject(g);
+      if (gBox.intersectsBox(bbBox)) {
+        bbImpact(bb.position.clone()); hit = true; break;
+      }
+    }
+    if (hit) { toRemove.push(bb); continue; }
+  }
+  for (const bb of toRemove) {
+    scene.remove(bb);
+    activeBBs.splice(activeBBs.indexOf(bb), 1);
+  }
+}
+
+function bbImpact(pos) {
+  const flash = new THREE.Mesh(
+    new THREE.SphereGeometry(0.15, 6, 4),
+    bbFlashMat.clone()
+  );
+  flash.position.copy(pos);
+  scene.add(flash);
+  let scale = 1;
+  const grow = () => {
+    scale += 0.15;
+    flash.scale.setScalar(scale);
+    flash.material.opacity -= 0.12;
+    if (flash.material.opacity > 0) requestAnimationFrame(grow);
+    else scene.remove(flash);
+  };
+  requestAnimationFrame(grow);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ARROW TYPES  (move vs shot)
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Per-type default colors: move = red, shoot = neon green
+const TYPE_COLORS = { move: '#ff453a', shoot: '#39ff14' };
+
+document.querySelectorAll('.arrow-type-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    arrowType = btn.dataset.type;
+    document.querySelectorAll('.arrow-type-btn').forEach(b => b.classList.toggle('on', b === btn));
+    // Auto-switch to this type's default color
+    const defaultColor = TYPE_COLORS[arrowType];
+    if (defaultColor) {
+      arrowColor = defaultColor;
+      // Highlight the matching color swatch, or clear selection if custom
+      document.querySelectorAll('.arrow-color-btn').forEach(b => {
+        b.classList.toggle('on', b.dataset.color === defaultColor);
+      });
+    }
+  });
+});
+
+// drawStroke handles both 'move' and 'shoot' types (defined earlier)
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FIELD DISTANCE UNITS RULER
+// ─────────────────────────────────────────────────────────────────────────────
+
+let showUnits = false;
+const unitsGroup = new THREE.Group();
+scene.add(unitsGroup);
+
+function buildRulers() {
+  unitsGroup.clear();
+  const y = 0.08;
+  const tickMat = new THREE.LineBasicMaterial({ color: 0xffffff, opacity: 0.4, transparent: true });
+
+  function addTick(x1, z1, x2, z2) {
+    const g = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(x1, y, z1), new THREE.Vector3(x2, y, z2)]);
+    unitsGroup.add(new THREE.Line(g, tickMat));
+  }
+
+  // Along X axis (width) — ticks along z = -hh edge
+  for (let x = -hw; x <= hw; x += 5) {
+    const isMajor = (x % 10 === 0);
+    const tickH = isMajor ? 1.0 : 0.5;
+    addTick(x, -hh, x, -hh - tickH);
+    if (isMajor) {
+      // Sprite label
+      const dist = Math.round(x + hw);
+      const spr = makeRulerSprite(String(dist));
+      spr.position.set(x, y + 0.1, -hh - 1.5);
+      unitsGroup.add(spr);
+    }
+  }
+
+  // Along Z axis (length) — ticks along x = -hw edge
+  for (let z = -hh; z <= hh; z += 5) {
+    const isMajor = (z % 10 === 0);
+    const tickH = isMajor ? 1.0 : 0.5;
+    addTick(-hw, z, -hw - tickH, z);
+    if (isMajor) {
+      const dist = Math.round(z + hh);
+      const spr = makeRulerSprite(String(dist));
+      spr.position.set(-hw - 1.5, y + 0.1, z);
+      unitsGroup.add(spr);
+    }
+  }
+}
+
+function makeRulerSprite(text) {
+  const cvs = document.createElement('canvas');
+  cvs.width = 64; cvs.height = 32;
+  const ctx = cvs.getContext('2d');
+  ctx.fillStyle = 'rgba(255,255,255,0.7)';
+  ctx.font = 'bold 20px sans-serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(text, 32, 16);
+  const tex = new THREE.CanvasTexture(cvs);
+  const spr = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true }));
+  spr.scale.set(2.5, 1.2, 1);
+  return spr;
+}
+
+function clearRulers() { unitsGroup.clear(); }
+
+const unitsBtn = document.getElementById('btn-units');
+unitsBtn.addEventListener('click', () => {
+  showUnits = !showUnits;
+  unitsBtn.textContent = `Units: ${showUnits ? 'ON' : 'OFF'}`;
+  unitsBtn.classList.toggle('on', showUnits);
+  if (showUnits) buildRulers(); else clearRulers();
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ORBIT FREECAM  — WASD / arrow keys pan in 3D mode
+// ─────────────────────────────────────────────────────────────────────────────
+
+function applyOrbitFreecam() {
+  if (walkMode) return;
+  const ae = document.activeElement;
+  if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.tagName === 'SELECT')) return;
+
+  const ORBIT_KEYS = ['w','a','s','d','ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' ','Shift'];
+  if (!ORBIT_KEYS.some(k => keysHeld.has(k))) return;
+
+  const speed = 0.6;
+  const dir = new THREE.Vector3();
+  camera.getWorldDirection(dir); dir.y = 0; dir.normalize();
+  const right = new THREE.Vector3().crossVectors(dir, new THREE.Vector3(0,1,0)).normalize();
+
+  const delta = new THREE.Vector3();
+  if (keysHeld.has('w') || keysHeld.has('ArrowUp'))    delta.addScaledVector(dir,   speed);
+  if (keysHeld.has('s') || keysHeld.has('ArrowDown'))  delta.addScaledVector(dir,  -speed);
+  if (keysHeld.has('d') || keysHeld.has('ArrowRight')) delta.addScaledVector(right,  speed);
+  if (keysHeld.has('a') || keysHeld.has('ArrowLeft'))  delta.addScaledVector(right, -speed);
+  if (keysHeld.has(' '))     delta.y += speed;   // Space  = fly up
+  if (keysHeld.has('Shift')) delta.y -= speed;   // Shift  = fly down
+
+  camera.position.add(delta);
+  controls.target.add(delta);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RELEASE NOTES  — add new entries at the TOP of the RELEASES array
+// ─────────────────────────────────────────────────────────────────────────────
+
+const RELEASES = [
+  // ── ROADMAP (planned) ──────────────────────────────────────────────────────
+  {
+    version: 'Roadmap',
+    date: 'Upcoming',
+    badge: 'roadmap',
+    items: [
+      '<strong>Real bunker dimensions</strong> — replace placeholder geometry with exact measured specs from Project N1 and Tac City Airsoft',
+      '<strong>FPS mode (PC only)</strong> — first-person walkthrough is a desktop feature; requires mouse + pointer lock; not available on mobile/tablet',
+      '<strong>Share layout</strong> — generate a shareable URL or QR code so you can send a layout to your team instantly',
+      '<strong>Additional fields</strong> — want your field represented in the app? Reach out to <a href="https://www.instagram.com/bryan.paintball/" target="_blank" rel="noopener" style="color:var(--blue)">@bryan.paintball</a> on Instagram',
+    ],
+  },
+  // ── v0.8 ───────────────────────────────────────────────────────────────────
+  {
+    version: 'v0.8',
+    date: 'Apr 2026',
+    badge: 'latest',
+    items: [
+      '<strong>Flip feature removed</strong> — bunkers can only be rotated, not flipped; H/V buttons and keyboard shortcuts removed',
+      '<strong>Default layouts</strong> — both Project N1 and Tac City Airsoft load a ready-made symmetrical speedsoft layout on first open or field switch',
+      '<strong>Tac City starting walls</strong> — rectangular brick bunkers placed at both short-end centres to represent the spawn/starting walls',
+    ],
+  },
+  // ── v0.7 ───────────────────────────────────────────────────────────────────
+  {
+    version: 'v0.7',
+    date: 'Apr 2026',
+    items: [
+      '<strong>Shot arrows forced straight</strong> — Shot-type arrows are always a straight line (click + drag to aim); Move arrows remain freehand',
+      '<strong>Shot arrows default neon green</strong> — switching to Shot auto-selects #39ff14; neon green swatch added to colour picker',
+      '<strong>Release notes modal</strong> — this panel; button near app title in the sidebar',
+      '<strong>App renamed</strong> — "Speedsoft Layout Planner" throughout; "SpeedQB" subtitle removed',
+      '<strong>Shadows removed</strong> — cleaner render, better performance on all devices',
+      '<strong>Bunker type rename in sidebar</strong> — ✎ button on each bunker card renames the type for future drops; placed instances unaffected',
+      '<strong>Callout feature removed</strong> — replaced by a unified per-instance rename (right-click or double-click a placed bunker)',
+      '<strong>Tracer toggle removed</strong> — T-key tracer feature removed for simplicity',
+      '<strong>Single-Escape exits FPS</strong> — pressing Escape once now reliably exits FPS mode and restores 3D view',
+      '<strong>FPS bunker collision</strong> — player can no longer walk through placed bunkers; slides along surfaces',
+      '<strong>FPS field boundary</strong> — player cannot walk outside the field perimeter',
+      '<strong>WASD freecam in 3D mode</strong> — arrow/WASD keys pan the orbit camera in layout mode',
+      '<strong>FPS renamed from Walk</strong> — button and mode now labelled "FPS"',
+      '<strong>Crosshair in FPS</strong> — white + crosshair shown at screen centre',
+      '<strong>Pointer Lock</strong> — FPS mode captures the cursor for unlimited 360° look; click canvas to re-acquire',
+      '<strong>Exit FPS → 3D view</strong> — leaving FPS snaps camera back to standard overhead 3D orbit',
+      '<strong>Player models grounded</strong> — figures now stand with feet exactly on the field surface',
+      '<strong>Realistic jump height</strong> — ~1.5 ft vertical with natural arc (~0.5 s to peak)',
+      '<strong>FPS eye height fixed</strong> — POV is at head level (~5.3 ft) matching the 6 ft player model',
+      '<strong>Rotation precision</strong> — bunker rotate buttons now step 15° per click (was 45°)',
+      '<strong>Long-press context menu</strong> — 500 ms long-press on mobile opens right-click menu',
+      '<strong>Visit counter removed</strong>',
+    ],
+  },
+  // ── v0.6 ───────────────────────────────────────────────────────────────────
+  {
+    version: 'v0.6',
+    date: 'Apr 2026',
+    items: [
+      '<strong>FPS / Walk mode</strong> — press F or the FPS button to enter first-person view; WASD to move, mouse to look',
+      '<strong>FPS physics</strong> — Crouch (C), Crawl (Z), Jump (Space), Sprint (Shift), Dive (Shift+Z), Slide (Shift+C)',
+      '<strong>BB shooting simulator</strong> — left-click in FPS fires a .25g BB at ~313 ft/s with hop-up straight flight then drop',
+      '<strong>Impact flash</strong> — white flash sphere on BB hit',
+      '<strong>Arrow types</strong> — Move (solid, freehand) and Shot (dashed) arrow styles',
+      '<strong>Multi-select</strong> — Shift+click to add to selection; box-select by dragging on empty canvas; transforms affect all selected',
+      '<strong>Right-click context menu</strong> — Rename, Duplicate, Delete on any bunker or player',
+      '<strong>Auto-save</strong> — layout saved to localStorage on every change; restored on page reload',
+      '<strong>Per-instance callouts</strong> — each placed bunker could store red/blue team callout names (later replaced by unified rename)',
+      '<strong>Field distance rulers</strong> — Units ON/OFF toggle draws distance markers on the field',
+    ],
+  },
+  // ── v0.5 ───────────────────────────────────────────────────────────────────
+  {
+    version: 'v0.5',
+    date: 'Apr 2026',
+    items: [
+      '<strong>Layout slots</strong> — 4 save/load slots with custom names; Export / Import JSON',
+      '<strong>Undo / Redo</strong> — separate stacks for scene changes and arrow strokes; Ctrl+Z / Ctrl+Y',
+      '<strong>Duplicate</strong> — Ctrl+D duplicates selected bunker',
+      '<strong>Bunker labels</strong> — Labels toggle shows name tag above each placed bunker',
+      '<strong>Screenshot</strong> — downloads a PNG of the current layout',
+      '<strong>Sidebar collapse</strong> — panel can be hidden to give more canvas space; reopens with arrow button',
+    ],
+  },
+  // ── v0.4 ───────────────────────────────────────────────────────────────────
+  {
+    version: 'v0.4',
+    date: 'Apr 2026',
+    items: [
+      '<strong>Player markers</strong> — human figure models with team colour (red/blue) and weapon badge; draggable',
+      '<strong>Draw arrows</strong> — freehand arrows with colour and thickness picker; separate canvas overlay',
+      '<strong>Mirror mode</strong> — symmetrical bunker placement across the field centre line',
+      '<strong>Snap to grid</strong> — 2.5 ft grid snap toggle',
+      '<strong>Flip H / Flip V</strong> — mirror a selected bunker horizontally or vertically',
+    ],
+  },
+  // ── v0.3 ───────────────────────────────────────────────────────────────────
+  {
+    version: 'v0.3',
+    date: 'Apr 2026',
+    items: [
+      '<strong>Field selector</strong> — Project N1 and Tac City Airsoft presets with editable width/length',
+      '<strong>Mobile support</strong> — sidebar becomes a bottom sheet; bunkers scroll horizontally; touch drag-and-drop',
+      '<strong>Apple-style UI</strong> — SF Pro font stack, dark glass sidebar, pill buttons, smooth transitions',
+    ],
+  },
+  // ── v0.2 ───────────────────────────────────────────────────────────────────
+  {
+    version: 'v0.2',
+    date: 'Apr 2026',
+    items: [
+      '<strong>Bunker library</strong> — Can, Fatboy, Cake, Dorito, Mini Dorito, Brick, Tombstone, Sup\'Air, Snake, Mini Snake, TCK, Corner, X-Bunker',
+      '<strong>Drag-and-drop placement</strong> — drag from sidebar onto field; click to arm then click-to-place',
+      '<strong>Rotate CW / CCW</strong> — R / E keys or toolbar buttons',
+      '<strong>Delete</strong> — Del key or toolbar button',
+      '<strong>Top view / 3D view</strong> — toolbar camera presets',
+      '<strong>Clear All</strong> — removes all placed bunkers',
+    ],
+  },
+  // ── v0.1 ───────────────────────────────────────────────────────────────────
+  {
+    version: 'v0.1',
+    date: 'Apr 2026',
+    items: [
+      '<strong>Initial build</strong> — Three.js scene with field plane, grid, ambient + directional lighting',
+      '<strong>OrbitControls</strong> — right-click orbit, middle-click pan, scroll zoom; floor clamp',
+      '<strong>Basic bunker shapes</strong> — placeholder geometry for common speedsoft bunkers',
+    ],
+  },
+];
+
+function buildRelNotes() {
+  const body = document.getElementById('relnotes-body');
+  body.innerHTML = RELEASES.map((r, i) => `
+    <div class="rn-version">
+      <div class="rn-tag">
+        <span class="rn-version-num">${r.version}</span>
+        <span class="rn-date">${r.date}</span>
+        ${r.badge ? `<span class="rn-badge ${r.badge}">${r.badge === 'latest' ? 'Latest' : 'Planned'}</span>` : ''}
+      </div>
+      <ul class="rn-items">
+        ${r.items.map(it => `<li>${it}</li>`).join('')}
+      </ul>
+      ${i < RELEASES.length - 1 ? '<hr class="rn-divider">' : ''}
+    </div>
+  `).join('');
+}
+
+const relnotesModal = document.getElementById('relnotes-modal');
+
+function openRelNotes() {
+  buildRelNotes();
+  relnotesModal.classList.add('open');
+}
+function closeRelNotes() {
+  relnotesModal.classList.remove('open');
+}
+
+document.getElementById('relnotes-close').addEventListener('click', closeRelNotes);
+relnotesModal.addEventListener('click', e => { if (e.target === relnotesModal) closeRelNotes(); });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && relnotesModal.classList.contains('open')) closeRelNotes();
+});
+
+// Wire up the button — rebuilt each time buildSidebar() runs, so use delegation
+document.getElementById('sidebar').addEventListener('click', e => {
+  if (e.target.closest('#btn-release-notes')) openRelNotes();
+  if (e.target.closest('#btn-controls')) openControls();
+});
+
+// Controls & Tips modal
+const controlsModal = document.getElementById('controls-modal');
+function openControls() { controlsModal.classList.add('open'); }
+function closeControls() { controlsModal.classList.remove('open'); }
+document.getElementById('controls-close').addEventListener('click', closeControls);
+controlsModal.addEventListener('click', e => { if (e.target === controlsModal) closeControls(); });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && controlsModal.classList.contains('open')) closeControls();
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// INIT + RENDER LOOP
+// ─────────────────────────────────────────────────────────────────────────────
+
+setMode('select');
+loadAutosave(); // everything is declared — safe to restore or load default layout
+
+(function animate() {
+  requestAnimationFrame(animate);
+  if (walkMode) {
+    applyFpsCamera();
+    updateBBs();
+  } else {
+    applyOrbitFreecam();
+    controls.update();
+  }
+  renderer.render(scene, camera);
+})();
+</script>
+</body>
+</html>
