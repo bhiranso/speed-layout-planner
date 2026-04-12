@@ -930,6 +930,8 @@ body.walk-mode #fps-crosshair-dot { display: block; }
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
+const LAST_UPDATED = 'Apr 12, 2026 · 2:29 AM';
+
 // ─────────────────────────────────────────────────────────────────────────────
 // FIELD DEFINITIONS  (placeholder bunkers — real data coming later)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1541,6 +1543,7 @@ function buildSidebar() {
       <div style="margin-bottom:10px">
         <div class="app-title" style="font-size:16px;font-weight:700;letter-spacing:-0.4px">Speedsoft Layout Planner</div>
         <div style="font-size:10px;color:var(--text3);margin-top:2px;letter-spacing:0.1px">Created by <a href="https://www.instagram.com/bryan.paintball/" target="_blank" rel="noopener" style="color:var(--text2);text-decoration:none">@bryan.paintball</a></div>
+        <div style="font-size:9.5px;color:var(--text3);margin-top:1px;letter-spacing:0.1px">Last updated: ${LAST_UPDATED}</div>
         <button id="btn-release-notes">📋 Release Notes &amp; Roadmap</button>
       </div>
       <div class="field-selector-wrap">
