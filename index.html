@@ -2868,20 +2868,58 @@ canvas.addEventListener('pointerup', e => {
 // TOOLBAR BUTTONS
 // ─────────────────────────────────────────────────────────────────────────────
 
-document.getElementById('btn-rcw').addEventListener('click', () => {
-  if (selected) {
-    pushUndo();
-    if (selSet.size > 1) selSet.forEach(g => { g.rotation.y -= Math.PI / 12; });
-    else selected.rotation.y -= Math.PI / 12;
+// CW / CCW — single click + hold-to-repeat
+(function() {
+  function makeRotateHandler(dir) {
+    // dir: -1 = CW, +1 = CCW
+    let holdTimer = null;
+    let repeatTimer = null;
+
+    function doRotate() {
+      if (!selected) return;
+      if (selSet.size > 1) selSet.forEach(g => { g.rotation.y += dir * Math.PI / 12; });
+      else selected.rotation.y += dir * Math.PI / 12;
+    }
+
+    function startHold() {
+      pushUndo();
+      doRotate();
+      holdTimer = setTimeout(() => {
+        repeatTimer = setInterval(doRotate, 80);
+      }, 400);
+    }
+
+    function stopHold() {
+      clearTimeout(holdTimer);
+      clearInterval(repeatTimer);
+      holdTimer = null; repeatTimer = null;
+    }
+
+    return { startHold, stopHold };
   }
-});
-document.getElementById('btn-rccw').addEventListener('click', () => {
-  if (selected) {
-    pushUndo();
-    if (selSet.size > 1) selSet.forEach(g => { g.rotation.y += Math.PI / 12; });
-    else selected.rotation.y += Math.PI / 12;
-  }
-});
+
+  const cw  = makeRotateHandler(-1);
+  const ccw = makeRotateHandler(+1);
+
+  const btnCW  = document.getElementById('btn-rcw');
+  const btnCCW = document.getElementById('btn-rccw');
+
+  // Mouse
+  btnCW.addEventListener('mousedown',  cw.startHold);
+  btnCW.addEventListener('mouseup',    cw.stopHold);
+  btnCW.addEventListener('mouseleave', cw.stopHold);
+  btnCCW.addEventListener('mousedown',  ccw.startHold);
+  btnCCW.addEventListener('mouseup',    ccw.stopHold);
+  btnCCW.addEventListener('mouseleave', ccw.stopHold);
+
+  // Touch
+  btnCW.addEventListener('touchstart',  e => { e.preventDefault(); cw.startHold(); },  { passive: false });
+  btnCW.addEventListener('touchend',    e => { e.preventDefault(); cw.stopHold(); },   { passive: false });
+  btnCW.addEventListener('touchcancel', cw.stopHold);
+  btnCCW.addEventListener('touchstart',  e => { e.preventDefault(); ccw.startHold(); }, { passive: false });
+  btnCCW.addEventListener('touchend',    e => { e.preventDefault(); ccw.stopHold(); },  { passive: false });
+  btnCCW.addEventListener('touchcancel', ccw.stopHold);
+})();
 document.getElementById('btn-del').addEventListener('click', () => { if (selected) deleteObject(selected); });
 document.getElementById('btn-clear').addEventListener('click', () => {
   if (!confirm('Clear all bunkers and players?')) return;
