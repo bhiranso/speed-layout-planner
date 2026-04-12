@@ -458,8 +458,11 @@ body.walk-mode #fps-crosshair-dot { display: block; }
 }
 .dim-input:focus { border-color: var(--blue); }
 
-/* ── Release Notes button (near app title) ── */
-#btn-release-notes {
+/* ── Global touch prevention ── */
+button, label[style*="cursor:pointer"] { touch-action: manipulation; }
+
+/* ── Release Notes + Controls buttons (near app title) ── */
+#btn-release-notes, #btn-controls {
   display: inline-flex; align-items: center; gap: 4px;
   margin-top: 5px;
   background: none; border: 1px solid rgba(255,255,255,0.12);
@@ -469,35 +472,20 @@ body.walk-mode #fps-crosshair-dot { display: block; }
   padding: 3px 9px; cursor: pointer;
   transition: border-color 0.15s, color 0.15s, background 0.15s;
 }
-#btn-release-notes:hover {
-  border-color: rgba(10,132,255,0.5);
-  color: var(--blue);
-  background: var(--blue-tint);
-}
-#btn-controls {
-  display: inline-flex; align-items: center; gap: 4px;
-  margin-top: 5px;
-  background: none; border: 1px solid rgba(255,255,255,0.12);
-  border-radius: var(--radius-pill);
-  color: var(--text3); font-family: var(--font);
-  font-size: 10px; font-weight: 500; letter-spacing: 0.1px;
-  padding: 3px 9px; cursor: pointer;
-  transition: border-color 0.15s, color 0.15s, background 0.15s;
-}
-#btn-controls:hover {
+#btn-release-notes { margin-right: 4px; }
+#btn-release-notes:hover, #btn-controls:hover {
   border-color: rgba(10,132,255,0.5);
   color: var(--blue);
   background: var(--blue-tint);
 }
 
 /* ── Release notes modal ── */
-#relnotes-modal, #controls-modal {
+#relnotes-modal, #controls-modal, #field-settings-modal {
   display: none; position: fixed; inset: 0; z-index: 300;
   align-items: center; justify-content: center;
-  background: rgba(0,0,0,0.7); backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: rgba(0,0,0,0.4);
 }
-#relnotes-modal.open, #controls-modal.open { display: flex; }
+#relnotes-modal.open, #controls-modal.open, #field-settings-modal.open { display: flex; }
 .relnotes-box {
   background: var(--bg1); border: 1px solid var(--separator);
   border-radius: var(--radius-lg); padding: 0;
@@ -724,6 +712,17 @@ body.walk-mode #fps-crosshair-dot { display: block; }
 
   /* Canvas wrap covers full screen */
   #canvas-wrap { width: 100%; height: 100%; }
+
+  /* Bigger tap targets on mobile */
+  .slot-action-btn { min-height: 36px; font-size: 11px; }
+  .slot-btn { min-height: 32px; font-size: 11px; }
+  #btn-release-notes, #btn-controls { padding: 5px 11px; font-size: 11px; }
+
+  /* Playbook + button — large enough to tap comfortably */
+  #btn-add-play { width: 32px !important; height: 32px !important; font-size: 18px !important; }
+
+  /* Sidebar header: wrap buttons if needed */
+  #sidebar-header > div:first-child { display: flex; flex-direction: column; align-items: flex-start; }
 }
 </style>
 
@@ -799,7 +798,6 @@ body.walk-mode #fps-crosshair-dot { display: block; }
       <div class="tb-group">
         <button class="tbtn" id="btn-labels">Labels: OFF</button>
         <button class="tbtn" id="btn-units">Units: OFF</button>
-        <button class="tbtn" id="btn-bunkers-black">Bunkers: CLR</button>
       </div>
       <div class="tb-group">
         <button class="tbtn" id="btn-undo">↩ Undo</button>
@@ -848,6 +846,15 @@ body.walk-mode #fps-crosshair-dot { display: block; }
       <div class="ctx-item" id="ctx-stance-crouch">◆ Crouching</div>
       <div class="ctx-item" id="ctx-stance-crawl">▬ Crawling</div>
     </div>
+    <div id="ctx-bunker-group" style="display:none">
+      <div class="ctx-sep"></div>
+      <div class="ctx-item" id="ctx-toggle-bw">Bunkers: Color</div>
+      <div class="ctx-item" id="ctx-recolor-row" style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+        <span>This bunker color</span>
+        <input type="color" id="ctx-color-pick" style="width:32px;height:22px;border:none;border-radius:4px;padding:1px 2px;background:var(--bg3);cursor:pointer;flex-shrink:0">
+      </div>
+      <div class="ctx-item" id="ctx-recolor-reset" style="color:var(--text3);font-size:12px">Reset bunker color</div>
+    </div>
     <div class="ctx-sep"></div>
     <div class="ctx-item danger" id="ctx-delete">Delete</div>
   </div>
@@ -877,6 +884,44 @@ body.walk-mode #fps-crosshair-dot { display: block; }
   </div>
 </div>
 
+<!-- Field Settings modal -->
+<div id="field-settings-modal">
+  <div class="relnotes-box" style="width:min(360px,92vw);max-height:unset">
+    <div class="relnotes-header">
+      <h2>⚙️ Field Settings</h2>
+      <button class="relnotes-close" id="btn-field-settings-close">✕</button>
+    </div>
+    <div style="padding:18px 22px 22px;display:flex;flex-direction:column;gap:16px">
+      <div>
+        <div class="field-selector-label" style="margin-bottom:8px">Dimensions</div>
+        <div class="dim-row">
+          <div class="dim-field">
+            <div class="dim-label">Width (ft)</div>
+            <input class="dim-input" id="fs-dim-w" type="number" min="10" max="300">
+          </div>
+          <div class="dim-field">
+            <div class="dim-label">Length (ft)</div>
+            <input class="dim-input" id="fs-dim-l" type="number" min="10" max="300">
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="field-selector-label" style="margin-bottom:8px">Environment Colors</div>
+        <div class="dim-row">
+          <div class="dim-field">
+            <div class="dim-label">Space (BG)</div>
+            <input type="color" id="fs-space-color" style="width:100%;height:28px;border:1px solid var(--separator);border-radius:6px;background:none;cursor:pointer;padding:2px 4px">
+          </div>
+          <div class="dim-field">
+            <div class="dim-label">Ground</div>
+            <input type="color" id="fs-ground-color" style="width:100%;height:28px;border:1px solid var(--separator);border-radius:6px;background:none;cursor:pointer;padding:2px 4px">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Controls & Tips modal -->
 <div id="controls-modal">
   <div class="relnotes-box">
@@ -899,12 +944,15 @@ body.walk-mode #fps-crosshair-dot { display: block; }
         </table>
       </div>
       <div style="border-top:1px solid var(--separator);padding-top:14px">
-        <div style="font-size:13px;font-weight:700;color:var(--text1);margin-bottom:8px">📱 Phone / Tablet — Limited</div>
+        <div style="font-size:13px;font-weight:700;color:var(--text1);margin-bottom:8px">📱 Phone / Tablet</div>
         <table style="width:100%;border-collapse:collapse;font-size:12px;color:var(--text2)">
           <tr><td style="padding:3px 8px 3px 0;color:var(--text3);white-space:nowrap">Pinch / swipe</td><td>Orbit &amp; zoom camera</td></tr>
-          <tr><td style="padding:3px 8px 3px 0;color:var(--text3);white-space:nowrap">Tap bunker</td><td>Select</td></tr>
-          <tr><td style="padding:3px 8px 3px 0;color:var(--text3);white-space:nowrap">Drag bunker</td><td>Move bunker</td></tr>
-          <tr><td style="padding:3px 8px 3px 0;color:var(--text3);white-space:nowrap">Long-press bunker</td><td>Context menu (rename, duplicate, delete)</td></tr>
+          <tr><td style="padding:3px 8px 3px 0;color:var(--text3);white-space:nowrap">Tap bunker / player</td><td>Select</td></tr>
+          <tr><td style="padding:3px 8px 3px 0;color:var(--text3);white-space:nowrap">Drag bunker / player</td><td>Move</td></tr>
+          <tr><td style="padding:3px 8px 3px 0;color:var(--text3);white-space:nowrap">Double-tap</td><td>Rename bunker or player</td></tr>
+          <tr><td style="padding:3px 8px 3px 0;color:var(--text3);white-space:nowrap">Long-press</td><td>Context menu (duplicate, delete, stance…)</td></tr>
+          <tr><td style="padding:3px 8px 3px 0;color:var(--text3);white-space:nowrap">Hold CW / CCW</td><td>Continuously rotate selected</td></tr>
+          <tr><td style="padding:3px 8px 3px 0;color:var(--text3);white-space:nowrap">Arrow mode</td><td>Draw freehand or straight arrows on field</td></tr>
           <tr><td style="padding:3px 8px 3px 0;color:var(--text3);white-space:nowrap;color:#ef4444">✗ FPS mode</td><td style="color:#ef4444">Requires mouse + pointer lock</td></tr>
           <tr><td style="padding:3px 8px 3px 0;color:var(--text3);white-space:nowrap;color:#ef4444">✗ Box-select</td><td style="color:#ef4444">Mouse drag only</td></tr>
         </table>
@@ -930,7 +978,7 @@ body.walk-mode #fps-crosshair-dot { display: block; }
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-const LAST_UPDATED = 'Apr 12, 2026 · 2:29 AM';
+const LAST_UPDATED = 'Apr 12, 2026 · 10:29 AM';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // FIELD DEFINITIONS  (placeholder bunkers — real data coming later)
@@ -1134,17 +1182,30 @@ function mat(col) {
 }
 
 // Recolour all placed bunkers to reflect the current bunkersBlack state.
-// Only touches meshes that belong to bunker geometry (userData.root is set).
+// Per-bunker overrideColor is respected when not in black mode.
 function applyBunkerColors() {
   placed.forEach(g => {
-    const col = bunkersBlack ? 0x141414 : hex3(g.userData.bunker.color);
+    const base = g.userData.overrideColor || g.userData.bunker.color;
+    const col  = bunkersBlack ? 0x141414 : hex3(base);
     g.traverse(c => {
       if (c.isMesh && c.userData.root && c.material?.color) {
         c.material.color.setHex(col);
-        // Keep any stored emissive base in sync so highlights still work
-        if (c.userData._em !== undefined) c.userData._em = c.material.emissive?.getHex() ?? 0;
+        // Reset _em to 0 so unhighlight doesn't restore a stale highlight tint
+        if (c.userData._em !== undefined) c.userData._em = 0;
       }
     });
+  });
+}
+
+// Recolour a single bunker group immediately.
+function applyBunkerColor(g) {
+  const base = g.userData.overrideColor || g.userData.bunker.color;
+  const col  = bunkersBlack ? 0x141414 : hex3(base);
+  g.traverse(c => {
+    if (c.isMesh && c.userData.root && c.material?.color) {
+      c.material.color.setHex(col);
+      if (c.userData._em !== undefined) c.userData._em = 0;
+    }
   });
 }
 
@@ -1268,6 +1329,77 @@ const FACTORIES = {
 let activeSlot = 0;
 const SLOT_KEY = i => `speedlayout_slot_${i}`;
 
+// ── Playbook (players + arrows only) ─────────────────────────────────────────
+let activePlay = 0;
+let playCount  = Math.max(1, parseInt(localStorage.getItem('speedlayout_play_count') || '1'));
+const PLAY_KEY = i => `speedlayout_play_${i}`;
+
+function snapshotPlay() {
+  return {
+    players: players.map(g => ({
+      team:       g.userData.team,
+      weapon:     g.userData.weapon,
+      playerName: g.userData.playerName || '',
+      stance:     g.userData.stance || 'standing',
+      faceIndex:  g.userData.faceIndex ?? 0,
+      rotY:       g.rotation.y,
+      x: g.position.x, z: g.position.z,
+    })),
+    arrows: arrowStrokes.map(s => ({ ...s })),
+  };
+}
+
+function restorePlay(snap) {
+  // Remove only players, keep bunkers
+  players.forEach(g => scene.remove(g));
+  players = [];
+  deselect();
+  // Restore arrows
+  arrowStrokes = (snap.arrows || []).map(s => ({ ...s }));
+  redrawArrows();
+  // Restore players
+  snap.players.forEach(p => {
+    const savedTeam   = playerTeam;
+    const savedWeapon = playerWeapon;
+    playerTeam   = p.team;
+    playerWeapon = p.weapon;
+    const pg = placePlayer(new THREE.Vector3(p.x, 0, p.z));
+    if (pg && p.faceIndex != null) pg.userData.faceIndex = p.faceIndex;
+    if (pg && p.playerName) { pg.userData.playerName = p.playerName; refreshPlayerSprite(pg); }
+    if (pg && p.stance && p.stance !== 'standing') setPlayerStance(pg, p.stance, true);
+    if (pg) pg.rotation.y = p.rotY ?? pg.rotation.y;
+    playerTeam   = savedTeam;
+    playerWeapon = savedWeapon;
+  });
+  deselect();
+  refreshLabels();
+}
+
+function loadPlayMeta(i) {
+  try { const d = localStorage.getItem(PLAY_KEY(i)); return d ? JSON.parse(d).__meta : null; }
+  catch { return null; }
+}
+
+function savePlay(i, name) {
+  const snap = snapshotPlay();
+  const existing = loadPlayMeta(i);
+  snap.__meta = { name: name !== undefined ? name : (existing ? existing.name : `Play ${i+1}`) };
+  localStorage.setItem(PLAY_KEY(i), JSON.stringify(snap));
+}
+
+function loadPlay(i) {
+  const d = localStorage.getItem(PLAY_KEY(i));
+  pushUndo();
+  if (!d) {
+    players.forEach(g => scene.remove(g));
+    players = []; deselect();
+    arrowStrokes = []; redrawArrows();
+    return;
+  }
+  try { restorePlay(JSON.parse(d)); }
+  catch(e) { alert('Failed to load play: ' + e.message); }
+}
+
 function snapshotState() {
   return {
     version: 1,
@@ -1275,8 +1407,9 @@ function snapshotState() {
     fieldW:  activeField().width,
     fieldL:  activeField().length,
     placed:  placed.map(g => ({
-      type:   g.userData.bunker.id,
-      label:  g.userData.bunker.label,
+      type:          g.userData.bunker.id,
+      label:         g.userData.bunker.label,
+      overrideColor: g.userData.overrideColor || null,
       x: g.position.x, z: g.position.z,
       rotY:   g.rotation.y,
       scaleX: g.scale.x, scaleZ: g.scale.z,
@@ -1286,6 +1419,7 @@ function snapshotState() {
       weapon:     g.userData.weapon,
       playerName: g.userData.playerName || '',
       stance:     g.userData.stance || 'standing',
+      faceIndex:  g.userData.faceIndex ?? 0,
       rotY:       g.rotation.y,
       x: g.position.x, z: g.position.z,
     })),
@@ -1308,6 +1442,7 @@ function restoreState(snap) {
       g.scale.x = p.scaleX ?? 1;
       g.scale.z = p.scaleZ ?? 1;
       if (p.label) g.userData.bunker = { ...g.userData.bunker, label: p.label };
+      if (p.overrideColor) { g.userData.overrideColor = p.overrideColor; applyBunkerColor(g); }
     }
   });
   snap.players.forEach(p => {
@@ -1316,6 +1451,7 @@ function restoreState(snap) {
     playerTeam   = p.team;
     playerWeapon = p.weapon;
     const pg = placePlayer(new THREE.Vector3(p.x, 0, p.z));
+    if (pg && p.faceIndex != null) pg.userData.faceIndex = p.faceIndex;
     if (pg && p.playerName) { pg.userData.playerName = p.playerName; refreshPlayerSprite(pg); }
     if (pg && p.stance && p.stance !== 'standing') setPlayerStance(pg, p.stance, true);
     if (pg && p.rotY) pg.rotation.y = p.rotY;
@@ -1361,12 +1497,28 @@ const redoStack = [];
 const MAX_UNDO  = 50;
 
 // Scene undo/redo (bunkers + players)
+const FIELD_SAVE_KEY = id => `speedlayout_field_${id}`;
+
+function saveFieldLayout(fieldId) {
+  try { localStorage.setItem(FIELD_SAVE_KEY(fieldId), JSON.stringify(snapshotState())); } catch(e) {}
+}
+
+function loadFieldLayout(fieldId) {
+  const d = localStorage.getItem(FIELD_SAVE_KEY(fieldId));
+  if (d) {
+    try { restoreState(JSON.parse(d)); return; } catch(e) {}
+  }
+  loadDefaultLayout(fieldId);
+}
+
 let autoSaveTimer = null;
 function autoSave() {
   if (autoSaveTimer) clearTimeout(autoSaveTimer);
   autoSaveTimer = setTimeout(() => {
     try {
       localStorage.setItem('speedlayout_autosave_v2', JSON.stringify(snapshotState()));
+      savePlay(activePlay);
+      saveFieldLayout(activeFieldId);
       showToast('Saved');
     } catch(e) {}
   }, 500);
@@ -1545,91 +1697,78 @@ function buildSidebar() {
         <div style="font-size:10px;color:var(--text3);margin-top:2px;letter-spacing:0.1px">Created by <a href="https://www.instagram.com/bryan.paintball/" target="_blank" rel="noopener" style="color:var(--text2);text-decoration:none">@bryan.paintball</a></div>
         <div style="font-size:9.5px;color:var(--text3);margin-top:1px;letter-spacing:0.1px">Last updated: ${LAST_UPDATED}</div>
         <button id="btn-release-notes">📋 Release Notes &amp; Roadmap</button>
+        <button id="btn-controls">🎮 Controls &amp; Tips</button>
       </div>
-      <div class="field-selector-wrap">
+      <!-- Export / Save -->
+      <div class="slot-actions" style="margin-top:8px">
+        <button class="slot-action-btn" id="btn-export-sb">Export Save</button>
+        <label class="slot-action-btn" style="cursor:pointer;text-align:center">Import Save<input type="file" id="btn-import-sb" accept=".json" style="display:none"></label>
+      </div>
+      <div class="field-selector-wrap" style="margin-top:10px">
         <div class="field-selector-label">Field</div>
-        <div class="field-select-control">
-          <select id="field-select">
-            ${Object.entries(FIELD_DEFS).map(([id, f]) =>
-              `<option value="${id}"${id === activeFieldId ? ' selected' : ''}>${f.label}</option>`
-            ).join('')}
-          </select>
-          <svg class="field-select-chevron" width="12" height="12" viewBox="0 0 12 12" fill="none">
-            <path d="M2 4 L6 8 L10 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
+        <div style="display:flex;gap:4px;align-items:center">
+          <div class="field-select-control" style="flex:1">
+            <select id="field-select">
+              ${Object.entries(FIELD_DEFS).map(([id, f]) =>
+                `<option value="${id}"${id === activeFieldId ? ' selected' : ''}>${f.label}</option>`
+              ).join('')}
+            </select>
+            <svg class="field-select-chevron" width="12" height="12" viewBox="0 0 12 12" fill="none">
+              <path d="M2 4 L6 8 L10 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <button id="btn-reset-field" title="Reset to field default" style="flex-shrink:0;width:28px;height:28px;display:flex;align-items:center;justify-content:center;background:var(--bg2);border:1px solid rgba(255,255,255,0.07);border-radius:var(--radius-sm);color:var(--text3);cursor:pointer;font-size:14px;transition:color 0.12s,background 0.12s" onmouseover="this.style.background='var(--bg3)';this.style.color='var(--text)'" onmouseout="this.style.background='var(--bg2)';this.style.color='var(--text3)'">↺</button>
         </div>
       </div>
-      <!-- Field dimensions -->
-      <div class="dim-row">
-        <div class="dim-field">
-          <div class="dim-label">Width (ft)</div>
-          <input class="dim-input" id="dim-w" type="number" min="10" max="300" value="${activeField().width}">
-        </div>
-        <div class="dim-field">
-          <div class="dim-label">Length (ft)</div>
-          <input class="dim-input" id="dim-l" type="number" min="10" max="300" value="${activeField().length}">
-        </div>
+      <div style="margin-top:6px">
+        <button class="slot-action-btn" id="btn-field-settings" style="width:100%">⚙️ Field Settings</button>
       </div>
-      <!-- Layout slots -->
-      <div class="field-selector-label" style="margin-top:10px">Layouts</div>
-      <div class="slot-row">
-        ${[0,1,2,3].map(i => {
-          const s = loadSlotMeta(i);
-          return `<button class="slot-btn${s ? ' filled' : ''}${activeSlot===i ? ' active' : ''}" data-slot="${i}">${s ? s.name : 'Empty'}</button>`;
+
+      <!-- Playbook -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:12px">
+        <div class="field-selector-label">📓 Playbook</div>
+        ${playCount < 8 ? `<button id="btn-add-play" title="Add play slot" style="width:26px;height:26px;display:flex;align-items:center;justify-content:center;background:var(--bg2);border:1px solid rgba(255,255,255,0.07);border-radius:50%;color:var(--text3);cursor:pointer;font-size:16px;line-height:1;flex-shrink:0;touch-action:manipulation">+</button>` : ''}
+      </div>
+      <div style="font-size:9.5px;color:var(--text3);margin-bottom:4px">Saves players + arrows — bunkers stay fixed</div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">
+        ${Array.from({length: playCount}, (_, i) => {
+          const s = loadPlayMeta(i);
+          return `<button class="slot-btn${s ? ' filled' : ''}${activePlay===i ? ' active' : ''}" data-play="${i}" style="flex:none;padding:4px 8px">${s ? s.name : `Play ${i+1}`}</button>`;
         }).join('')}
       </div>
-      <div class="slot-actions">
-        <button class="slot-action-btn save-btn" id="btn-save-slot">Save to slot</button>
-        <button class="slot-action-btn" id="btn-load-slot">Load slot</button>
-      </div>
       <div class="slot-actions" style="margin-top:4px">
-        <button class="slot-action-btn" id="btn-export-sb">Export JSON</button>
-        <label class="slot-action-btn" style="cursor:pointer;text-align:center">Import JSON<input type="file" id="btn-import-sb" accept=".json" style="display:none"></label>
+        <button class="slot-action-btn" id="btn-clear-play" style="color:#ff453a">Clear play</button>
       </div>
-      <!-- Environment colours -->
-      <div style="margin-top:12px">
-        <div class="field-selector-label">Environment Colors</div>
-        <div class="dim-row" style="margin-top:4px">
-          <div class="dim-field">
-            <div class="dim-label">Space (BG)</div>
-            <input type="color" id="env-space-color" value="${envSpaceColor}"
-              style="width:100%;height:28px;border:1px solid var(--separator);border-radius:6px;background:none;cursor:pointer;padding:2px 4px">
-          </div>
-          <div class="dim-field">
-            <div class="dim-label">Ground</div>
-            <input type="color" id="env-ground-color" value="${envGroundColor}"
-              style="width:100%;height:28px;border:1px solid var(--separator);border-radius:6px;background:none;cursor:pointer;padding:2px 4px">
-          </div>
-        </div>
-      </div>
-
-      <button id="btn-controls">🎮 Controls &amp; Tips</button>
     </div>`;
 
-  document.getElementById('env-space-color').addEventListener('input', e => {
-    envSpaceColor = e.target.value;
-    localStorage.setItem('speedlayout_space_color', envSpaceColor);
-    applyEnvColors();
-  });
-  document.getElementById('env-ground-color').addEventListener('input', e => {
-    envGroundColor = e.target.value;
-    localStorage.setItem('speedlayout_ground_color', envGroundColor);
-    buildField(); // rebuild grid colour too
-    applyEnvColors();
+  document.getElementById('btn-field-settings').addEventListener('click', () => {
+    document.getElementById('fs-dim-w').value = activeField().width;
+    document.getElementById('fs-dim-l').value = activeField().length;
+    document.getElementById('fs-space-color').value = envSpaceColor;
+    document.getElementById('fs-ground-color').value = envGroundColor;
+    document.getElementById('field-settings-modal').classList.add('open');
   });
 
   document.getElementById('field-select').addEventListener('change', e => {
+    saveFieldLayout(activeFieldId);   // persist current field before leaving
     activeFieldId = e.target.value;
     buildField();
     buildSidebar();
-    // Clear placed bunkers since we switched fields
     [...placed, ...players].forEach(g => scene.remove(g));
     placed = []; players = []; deselect();
     controls.target.set(0, 0, 0);
     camera.position.set(0, FH * 0.5, FH * 0.65);
     controls.update();
-    // Load the default starting layout for the new field
+    loadFieldLayout(activeFieldId);   // load saved or default
+  });
+
+  document.getElementById('btn-reset-field').addEventListener('click', () => {
+    if (!confirm(`Reset to the default layout for this field? Your custom bunker positions will be lost.`)) return;
+    localStorage.removeItem(FIELD_SAVE_KEY(activeFieldId));
+    [...placed, ...players].forEach(g => scene.remove(g));
+    placed = []; players = []; deselect();
     loadDefaultLayout(activeFieldId);
+    autoSave();
   });
 
   const cats = {};
@@ -1681,41 +1820,37 @@ function buildSidebar() {
   });
   bindCollapseBtn();
 
-  // Field dimension inputs
-  const dimW = document.getElementById('dim-w');
-  const dimL = document.getElementById('dim-l');
-  function applyDims() {
-    const w = parseInt(dimW.value) || 50;
-    const l = parseInt(dimL.value) || 100;
-    activeField().width  = Math.max(10, Math.min(300, w));
-    activeField().length = Math.max(10, Math.min(300, l));
-    buildField();
-  }
-  dimW.addEventListener('change', applyDims);
-  dimL.addEventListener('change', applyDims);
 
-  // Slot buttons
-  document.querySelectorAll('.slot-btn').forEach(btn => {
+  // Playbook slot buttons — click to auto-save current play then switch
+  document.querySelectorAll('.slot-btn[data-play]').forEach(btn => {
     btn.addEventListener('click', () => {
-      activeSlot = parseInt(btn.dataset.slot);
-      document.querySelectorAll('.slot-btn').forEach(b => b.classList.toggle('active', b === btn));
+      const next = parseInt(btn.dataset.play);
+      if (next === activePlay) return;
+      savePlay(activePlay);
+      activePlay = next;
+      loadPlay(activePlay);
+      buildSidebar();
     });
   });
-  document.getElementById('btn-save-slot').addEventListener('click', () => {
-    const name = prompt(`Name this layout (slot ${activeSlot + 1}):`, `Layout ${activeSlot + 1}`);
-    if (name === null) return;
-    saveSlot(activeSlot, name.trim() || `Layout ${activeSlot + 1}`);
+
+  // Add play slot
+  document.getElementById('btn-add-play')?.addEventListener('click', () => {
+    if (playCount >= 8) return;
+    playCount++;
+    localStorage.setItem('speedlayout_play_count', playCount);
     buildSidebar();
   });
-  document.getElementById('btn-load-slot').addEventListener('click', () => {
-    const meta = loadSlotMeta(activeSlot);
-    if (!meta) {
-      if (!confirm('Slot is empty — load it anyway? (This will clear the field.)')) return;
-    } else {
-      if (!confirm(`Load "${meta.name}"? Current layout will be replaced.`)) return;
-    }
-    loadSlot(activeSlot);
+  document.getElementById('btn-clear-play').addEventListener('click', () => {
+    if (!confirm('Clear all players and arrows? Bunkers stay.')) return;
+    // Remove players
+    players.slice().forEach(p => { scene.remove(p); });
+    players.length = 0;
+    // Remove arrows
+    arrowStrokes.forEach(s => { if (s.line) scene.remove(s.line); if (s.head) scene.remove(s.head); });
+    arrowStrokes.length = 0;
+    autoSave();
   });
+
   document.getElementById('btn-export-sb').addEventListener('click', exportJSON);
   document.getElementById('btn-import-sb').addEventListener('change', e => {
     if (e.target.files[0]) { importJSON(e.target.files[0]); e.target.value = ''; }
@@ -1866,6 +2001,23 @@ function resizeArrowCanvas() {
   redrawArrows();
 }
 
+// Project a world-space {x,z} point to arrow-canvas pixel coords
+function worldToScreen(wx, wz) {
+  const v = new THREE.Vector3(wx, 0.05, wz);
+  v.project(camera);
+  return {
+    x: (v.x * 0.5 + 0.5) * arrowCanvas.width,
+    y: (-v.y * 0.5 + 0.5) * arrowCanvas.height
+  };
+}
+
+// Raycast screen position to world {x,z} on field plane (no snap — freehand)
+function arrowWorldPt(clientX, clientY) {
+  raycaster.setFromCamera(ndcFromClient(clientX, clientY), camera);
+  const pt = new THREE.Vector3();
+  return raycaster.ray.intersectPlane(fieldPlane, pt) ? { x: pt.x, z: pt.z } : null;
+}
+
 function redrawArrows() {
   actx.clearRect(0, 0, arrowCanvas.width, arrowCanvas.height);
   arrowStrokes.forEach(s => drawStroke(s, false));
@@ -1875,6 +2027,10 @@ function redrawArrows() {
 function drawStroke(stroke, isLive) {
   const { pts, color, width, type } = stroke;
   if (pts.length < 2) return;
+  // Old screen-space format had {x,y}; new world-space has {x,z} — skip stale saves
+  if ('y' in pts[0] && !('z' in pts[0])) return;
+  // Project world coords to screen pixels for drawing
+  const sp = pts.map(p => worldToScreen(p.x, p.z));
   actx.save();
   actx.strokeStyle = color;
   actx.lineWidth   = width;
@@ -1883,15 +2039,15 @@ function drawStroke(stroke, isLive) {
   actx.globalAlpha = isLive ? 0.7 : 1.0;
   if (type === 'shoot') actx.setLineDash([8, 6]);
   actx.beginPath();
-  actx.moveTo(pts[0].x, pts[0].y);
-  for (let i = 1; i < pts.length; i++) actx.lineTo(pts[i].x, pts[i].y);
+  actx.moveTo(sp[0].x, sp[0].y);
+  for (let i = 1; i < sp.length; i++) actx.lineTo(sp[i].x, sp[i].y);
   actx.stroke();
   actx.setLineDash([]);
 
   // Arrowhead at last segment
-  const n = pts.length;
-  const tail = pts[Math.max(0, n - 8)];
-  const tip  = pts[n - 1];
+  const n = sp.length;
+  const tail = sp[Math.max(0, n - 8)];
+  const tip  = sp[n - 1];
   const angle = Math.atan2(tip.y - tail.y, tip.x - tail.x);
   const headLen = Math.max(12, width * 4);
   if (type === 'shoot') {
@@ -1925,28 +2081,24 @@ arrowCanvas.addEventListener('pointerdown', e => {
   if (mode !== 'arrow') return;
   e.preventDefault();
   arrowCanvas.setPointerCapture(e.pointerId);
-  const r = arrowCanvas.getBoundingClientRect();
-  const startPt = { x: e.clientX - r.left, y: e.clientY - r.top };
-  // Shot arrows always straight: seed two identical points, endpoint updated on move
+  const startPt = arrowWorldPt(e.clientX, e.clientY);
+  if (!startPt) return;
   currentStroke = {
     pts: arrowType === 'shoot' ? [startPt, { ...startPt }] : [startPt],
     color: arrowColor, width: arrowWidth, type: arrowType
   };
-  redrawArrows();
 });
 
 arrowCanvas.addEventListener('pointermove', e => {
   if (!currentStroke) return;
   e.preventDefault();
-  const r   = arrowCanvas.getBoundingClientRect();
-  const pt  = { x: e.clientX - r.left, y: e.clientY - r.top };
+  const pt = arrowWorldPt(e.clientX, e.clientY);
+  if (!pt) return;
   if (currentStroke.type === 'shoot') {
-    // Shot arrows are always straight — just update the endpoint
     currentStroke.pts[1] = pt;
   } else {
     currentStroke.pts.push(pt);
   }
-  redrawArrows();
 });
 
 arrowCanvas.addEventListener('pointerup', e => {
@@ -2383,6 +2535,186 @@ function addSerapeStripes(g) {
   });
 }
 
+// ── Face: pure geometry so it always renders correctly ───────────────────────
+// Skin tones + eye colors vary by seed — no canvas needed
+const SKIN_TONES  = [0xffd5b0, 0xf0a868, 0xc07840, 0x8b5a2b, 0x4a2810];
+const HAIR_COLORS = [0x111111, 0x3b1f0a, 0x8b5e1a, 0xd4a020, 0xcc2200];
+const LENS_COLORS = [0x00aaff, 0xff4400, 0xffcc00, 0x00dd44, 0xee00ee];
+const MASK_COLORS = [
+  0x111111, // black
+  0xcc2200, // red
+  0x0055cc, // blue
+  0x226600, // olive green
+  0xcc8800, // orange
+  0x660066, // purple
+  0xdddddd, // white/grey
+  0x004444, // dark teal
+  0x882200, // dark red/maroon
+  0x334400, // army green
+];
+
+function addFaceFeatures(head, seed, radius, root) {
+  const mk = (geo, col, px, py, pz, rx, ry, rz) => {
+    const m = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ color: col }));
+    m.position.set(px, py, pz);
+    if (rx) m.rotation.set(rx, ry ?? 0, rz ?? 0);
+    m.userData.root = root;
+    head.add(m);
+    return m;
+  };
+  const r = radius;
+  const lensCol = LENS_COLORS[(seed >> 1) % 5];
+  const maskCol = MASK_COLORS[(seed >> 3) % MASK_COLORS.length];
+  // Slightly darker shade for lower mask / chin
+  const maskDark = new THREE.Color(maskCol).multiplyScalar(0.65).getHex();
+
+  // Skin tone
+  head.material = new THREE.MeshLambertMaterial({ color: SKIN_TONES[seed % 5] });
+
+  // ── JT Proflex-style paintball mask ─────────────────────────────────────
+  // The Proflex has 3 key parts:
+  // 1. Rigid upper goggle frame + wraparound lens
+  // 2. Soft flexible lower mask (ribbed, concave) protecting chin/jaw
+  // 3. Padded ear covers on sides
+
+  // — Goggle frame (rigid upper shell, sits on forehead & cheeks) —
+  mk(new THREE.BoxGeometry(r * 2.10, r * 0.65, r * 0.28), maskCol,
+     0, r * 0.18, -(r * 0.88));
+  // Forehead visor brim (extends forward like a visor)
+  mk(new THREE.BoxGeometry(r * 1.90, r * 0.16, r * 0.30), maskCol,
+     0, r * 0.56, -(r * 0.78));
+  // — Wide wraparound Spectra lens —
+  mk(new THREE.BoxGeometry(r * 1.82, r * 0.50, r * 0.06), lensCol,
+     0, r * 0.16, -(r * 1.02));
+  // Lens shine streak
+  mk(new THREE.BoxGeometry(r * 0.55, r * 0.08, r * 0.02), 0xffffff,
+     -r * 0.50, r * 0.30, -(r * 1.04));
+  // Foam padding around lens (thin dark border)
+  mk(new THREE.BoxGeometry(r * 2.00, r * 0.62, r * 0.10), maskDark,
+     0, r * 0.16, -(r * 0.97));
+
+  // — Flexible lower mask (Proflex "flex" part) —
+  // Main lower body — concave-ish, covers nose+mouth
+  mk(new THREE.BoxGeometry(r * 1.70, r * 0.52, r * 0.34), maskCol,
+     0, -r * 0.30, -(r * 0.86));
+  // Horizontal flex ribs (the signature Proflex ribbed look — 3 ribs)
+  for (let i = 0; i < 3; i++) {
+    mk(new THREE.BoxGeometry(r * 1.55, r * 0.06, r * 0.38), maskDark,
+       0, -r * 0.10 - i * r * 0.19, -(r * 0.90));
+  }
+  // Chin cup — tapers and cups forward
+  mk(new THREE.BoxGeometry(r * 1.30, r * 0.32, r * 0.42), maskCol,
+     0, -r * 0.68, -(r * 0.80));
+  // Chin tip (rounded forward protrusion)
+  mk(new THREE.BoxGeometry(r * 0.90, r * 0.22, r * 0.18), maskDark,
+     0, -r * 0.80, -(r * 0.95));
+  // Vent holes on chin (Proflex has mesh venting)
+  for (let i = -1; i <= 1; i++) {
+    mk(new THREE.BoxGeometry(r * 0.13, r * 0.10, r * 0.08), 0x000000,
+       i * r * 0.34, -r * 0.68, -(r * 1.01));
+  }
+
+  // — Ear covers (padded side pods) —
+  mk(new THREE.BoxGeometry(r * 0.22, r * 0.72, r * 0.56), maskCol,
+     -(r * 1.06), -r * 0.10, -(r * 0.52));
+  mk(new THREE.BoxGeometry(r * 0.22, r * 0.72, r * 0.56), maskCol,
+      (r * 1.06), -r * 0.10, -(r * 0.52));
+  // Ear vent slots
+  mk(new THREE.BoxGeometry(r * 0.06, r * 0.12, r * 0.20), 0x000000,
+     -(r * 1.16), r * 0.10, -(r * 0.48));
+  mk(new THREE.BoxGeometry(r * 0.06, r * 0.12, r * 0.20), 0x000000,
+      (r * 1.16), r * 0.10, -(r * 0.48));
+
+  // — Back strap (elastic band visible at temples) —
+  mk(new THREE.BoxGeometry(r * 0.14, r * 0.22, r * 0.18), 0x111111,
+     -(r * 1.06), r * 0.18, r * 0.10);
+  mk(new THREE.BoxGeometry(r * 0.14, r * 0.22, r * 0.18), 0x111111,
+      (r * 1.06), r * 0.18, r * 0.10);
+
+  // Hair on top (varies by seed)
+  mk(new THREE.SphereGeometry(r * 0.74, 8, 5, 0, Math.PI * 2, 0, Math.PI * 0.52),
+     HAIR_COLORS[(seed >> 2) % 5], 0, r * 0.28, 0);
+}
+
+// ── Weapon meshes — distinct silhouettes, oriented along -Z (forward) ─────────
+function makeWeaponMesh(weapon) {
+  const M = (geo, col) => new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ color: col }));
+  const grp = new THREE.Group();
+
+  if (weapon === 'pistol' || weapon === 'P') {
+    // ── Glock-style pistol: short, blocky, compact ───────────────────────
+    // Slide (top body)
+    const slide = M(new THREE.BoxGeometry(0.28, 0.28, 1.00), 0x222222);
+    slide.position.set(0, 0.14, -0.10);
+    // Barrel tip (extends slightly past slide)
+    const tip = M(new THREE.BoxGeometry(0.18, 0.18, 0.20), 0x111111);
+    tip.position.set(0, 0.14, -0.65);
+    // Frame / grip (angled down)
+    const frame = M(new THREE.BoxGeometry(0.24, 0.55, 0.34), 0x333333);
+    frame.position.set(0, -0.18, 0.18); frame.rotation.x = 0.15;
+    // Trigger guard
+    const tg = M(new THREE.BoxGeometry(0.10, 0.12, 0.28), 0x333333);
+    tg.position.set(0, -0.04, -0.14);
+    grp.add(slide, tip, frame, tg);
+
+  } else if (weapon === 'shotgun' || weapon === 'SG') {
+    // ── Remington 870-style pump shotgun ────────────────────────────────
+    // Wood stock (back) — tan/brown
+    const stock = M(new THREE.BoxGeometry(0.28, 0.30, 1.10), 0x7a4a1e);
+    stock.position.set(0, 0.05, 0.75);
+    // Receiver body
+    const receiver = M(new THREE.BoxGeometry(0.30, 0.32, 0.80), 0x1a1a1a);
+    receiver.position.set(0, 0.06, -0.10);
+    // Thick tubular barrel (most distinctive M870 feature)
+    const barrel = M(new THREE.CylinderGeometry(0.12, 0.12, 1.50, 10), 0x111111);
+    barrel.rotation.x = Math.PI / 2; barrel.position.set(0, 0.14, -0.85);
+    // Magazine tube UNDER barrel (M870 signature)
+    const magtube = M(new THREE.CylinderGeometry(0.08, 0.08, 1.30, 8), 0x222222);
+    magtube.rotation.x = Math.PI / 2; magtube.position.set(0, -0.06, -0.75);
+    // Pump / forend grip (tan, under barrel)
+    const pump = M(new THREE.BoxGeometry(0.32, 0.24, 0.42), 0x7a4a1e);
+    pump.position.set(0, 0.00, -0.55);
+    // Pistol grip (back)
+    const grip = M(new THREE.BoxGeometry(0.22, 0.58, 0.26), 0x2a2a2a);
+    grip.position.set(0, -0.26, 0.30); grip.rotation.x = 0.2;
+    grp.add(stock, receiver, barrel, magtube, pump, grip);
+
+  } else {
+    // ── AR-15/M4-style rifle ─────────────────────────────────────────────
+    // Stock (back, collapsible look)
+    const stock = M(new THREE.BoxGeometry(0.24, 0.22, 0.70), 0x2a2a2a);
+    stock.position.set(0, 0.04, 0.95);
+    const stockBuf = M(new THREE.BoxGeometry(0.22, 0.30, 0.16), 0x1a1a1a);
+    stockBuf.position.set(0, 0.04, 1.30);
+    // Lower receiver
+    const lower = M(new THREE.BoxGeometry(0.28, 0.30, 0.90), 0x1a1a1a);
+    lower.position.set(0, 0.04, 0.20);
+    // Upper receiver (slightly narrower)
+    const upper = M(new THREE.BoxGeometry(0.24, 0.22, 1.00), 0x222222);
+    upper.position.set(0, 0.30, 0.20);
+    // Handguard
+    const hg = M(new THREE.BoxGeometry(0.22, 0.20, 0.65), 0x303030);
+    hg.position.set(0, 0.30, -0.38);
+    // Compact barrel (M4 carbine length)
+    const barrel = M(new THREE.CylinderGeometry(0.06, 0.06, 0.90, 8), 0x111111);
+    barrel.rotation.x = Math.PI / 2; barrel.position.set(0, 0.30, -0.95);
+    // Muzzle flash hider
+    const muzzle = M(new THREE.CylinderGeometry(0.09, 0.06, 0.16, 6), 0x111111);
+    muzzle.rotation.x = Math.PI / 2; muzzle.position.set(0, 0.30, -1.45);
+    // Magazine (sticks down — most recognizable AR feature)
+    const mag = M(new THREE.BoxGeometry(0.20, 0.72, 0.32), 0x333333);
+    mag.position.set(0, -0.28, 0.18); mag.rotation.x = 0.1;
+    // Pistol grip
+    const grip = M(new THREE.BoxGeometry(0.22, 0.55, 0.28), 0x1a1a1a);
+    grip.position.set(0, -0.22, 0.60); grip.rotation.x = 0.25;
+    // Charging handle on top
+    const ch = M(new THREE.BoxGeometry(0.10, 0.10, 0.18), 0x222222);
+    ch.position.set(0, 0.43, 0.65);
+    grp.add(stock, stockBuf, lower, upper, hg, barrel, muzzle, mag, grip, ch);
+  }
+  return grp;
+}
+
 // ── Build / rebuild player body meshes for a given stance ────────────────────
 // Returns the Y position where the name/weapon sprite should float.
 function buildPlayerMeshes(g, team, stance) {
@@ -2393,6 +2725,18 @@ function buildPlayerMeshes(g, team, stance) {
   const bm       = () => new THREE.MeshLambertMaterial({ color: bodyCol });
 
   const add = (...meshes) => meshes.forEach(m => { m.userData.root = g; g.add(m); });
+
+  const face   = g.userData.faceIndex ?? 0;
+  const weapon = g.userData.weapon ?? 'rifle';
+
+  const addWeapon = (wpn, pos, rx, ry, rz) => {
+    const wm = makeWeaponMesh(wpn);
+    wm.scale.setScalar(1.5); // scale up to match figure
+    wm.position.copy(pos);
+    wm.rotation.set(rx ?? 0, ry ?? 0, rz ?? 0);
+    wm.traverse(c => { if (c.isMesh) c.userData.root = g; });
+    g.add(wm);
+  };
 
   if (stance === 'crouching') {
     // ── Low ready — compressed, torso pitched forward ─────────────────────
@@ -2406,14 +2750,17 @@ function buildPlayerMeshes(g, team, stance) {
     torso.position.set(0, 2.55, 0.25); torso.rotation.x = 0.38;
     const head  = new THREE.Mesh(new THREE.SphereGeometry(0.52, 10, 8), bm());
     head.position.set(0, 3.45, 0.38);
+    addFaceFeatures(head, face, 0.52, g);
     const armL  = new THREE.Mesh(new THREE.BoxGeometry(0.32, 1.3, 0.38), bm());
     armL.position.set(-0.72, 2.3, 0.4); armL.rotation.z = 0.5; armL.rotation.x = 0.55;
     const armR  = new THREE.Mesh(new THREE.BoxGeometry(0.32, 1.3, 0.38), bm());
     armR.position.set( 0.72, 2.3, 0.4); armR.rotation.z = -0.5; armR.rotation.x = 0.55;
     add(legL, legR, hips, torso, head, armL, armR);
+    // Weapon held out front at chest height
+    addWeapon(weapon, new THREE.Vector3(0.55, 2.4, -0.8), 0.5, 0, 0);
     if (isCarp) {
       addSerapeStripes(g);
-      const hat = makeSombrero(); hat.position.set(0, 4.2, 0.45); hat.rotation.x = 0.38;
+      const hat = makeSombrero(); hat.position.set(0, 3.45, 0.38); hat.rotation.x = 0.38;
       hat.traverse(c => { if (c.isMesh) c.userData.root = g; }); g.add(hat);
     }
     return 5.0;
@@ -2424,6 +2771,7 @@ function buildPlayerMeshes(g, team, stance) {
     body.position.set(0, 0.42, 0);
     const head  = new THREE.Mesh(new THREE.SphereGeometry(0.46, 10, 8), bm());
     head.position.set(0, 0.72, -1.7);
+    addFaceFeatures(head, face, 0.46, g);
     const armL  = new THREE.Mesh(new THREE.BoxGeometry(0.30, 0.36, 1.3), bm());
     armL.position.set(-0.68, 0.42, -1.55);
     const armR  = new THREE.Mesh(new THREE.BoxGeometry(0.30, 0.36, 1.3), bm());
@@ -2433,8 +2781,9 @@ function buildPlayerMeshes(g, team, stance) {
     const legR  = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.38, 1.45), bm());
     legR.position.set( 0.26, 0.3, 1.25);
     add(body, head, armL, armR, legL, legR);
+    // Weapon pointing forward while prone
+    addWeapon(weapon, new THREE.Vector3(0, 0.65, -2.8), 0, 0, 0);
     if (isCarp) {
-      // Serape: horizontal stripes on the body
       const STRIPE_H = 0.115;
       SERAPE_COLORS.forEach((col, i) => {
         const m = new THREE.Mesh(new THREE.BoxGeometry(0.97, 0.44, STRIPE_H),
@@ -2442,7 +2791,7 @@ function buildPlayerMeshes(g, team, stance) {
         m.position.set(0, 0.44, -1.05 + i * (STRIPE_H + 0.01));
         m.userData.root = g; g.add(m);
       });
-      const hat = makeSombrero(); hat.position.set(0, 1.5, -1.7); hat.rotation.x = -Math.PI / 2;
+      const hat = makeSombrero(); hat.position.set(0, 0.72, -1.7); hat.rotation.x = -Math.PI / 2;
       hat.traverse(c => { if (c.isMesh) c.userData.root = g; }); g.add(hat);
     }
     return 2.2;
@@ -2459,14 +2808,18 @@ function buildPlayerMeshes(g, team, stance) {
     torso.position.y = 4.30;
     const head  = new THREE.Mesh(new THREE.SphereGeometry(0.52, 10, 8), bm());
     head.position.y = 5.58;
+    addFaceFeatures(head, face, 0.52, g);
     const armL  = new THREE.Mesh(new THREE.BoxGeometry(0.32, 1.55, 0.38), bm());
     armL.position.set(-0.75, 4.15, 0); armL.rotation.z =  0.25;
     const armR  = new THREE.Mesh(new THREE.BoxGeometry(0.32, 1.55, 0.38), bm());
     armR.position.set( 0.75, 4.15, 0); armR.rotation.z = -0.25;
     add(legL, legR, hips, torso, head, armL, armR);
+    // Weapon held at chest height pointing forward
+    addWeapon(weapon, new THREE.Vector3(0.55, 4.2, -0.9), 0.25, 0, -0.15);
     if (isCarp) {
       addSerapeStripes(g);
-      const hat = makeSombrero(); hat.position.set(0, 6.3, 0);
+      // brim sits at mid-skull so crown wraps over head
+      const hat = makeSombrero(); hat.position.set(0, 5.58, 0);
       hat.traverse(c => { if (c.isMesh) c.userData.root = g; }); g.add(hat);
     }
     return 7.6;
@@ -2508,16 +2861,25 @@ function getPlayerGroundY(x, z) {
   return Math.max(0, hits[0].point.y);
 }
 
+// 1 scene unit = 1 ft. A player is 5'10" = 5.833 ft.
+// Standing figure top-of-head = ~6.10 units → scale = 5.833/6.10 ≈ 0.957
+const PLAYER_SCALE = 5.833 / 6.10;
+
 function placePlayer(pos) {
   const g = new THREE.Group();
   g.position.copy(pos);
   // Elevate player to stand on top of whatever bunker is at this XZ position
   g.position.y = getPlayerGroundY(pos.x, pos.z);
+  // Face toward the midline (z=0): positive z side faces negative z, and vice versa
+  g.rotation.y = pos.z >= 0 ? 0 : Math.PI;
+  // Scale to real-world 5'10" proportional to 1 unit = 1 ft field
+  g.scale.setScalar(PLAYER_SCALE);
   g.userData.kind       = 'player';
   g.userData.team       = playerTeam;
   g.userData.weapon     = playerWeapon;
   g.userData.playerName = '';
   g.userData.stance     = 'standing';
+  g.userData.faceIndex  = Math.floor(Math.random() * 125); // random face seed
 
   const spriteH = buildPlayerMeshes(g, playerTeam, 'standing');
 
@@ -2613,20 +2975,7 @@ renameModal.addEventListener('click', e => { if (e.target === renameModal) close
 // SELECTION + HIGHLIGHT
 // ─────────────────────────────────────────────────────────────────────────────
 
-const HIGHLIGHT = 0x774400;   // subtle warm emissive tint
-
 function highlightObj(g) {
-  g.traverse(c => {
-    if (c.isMesh && !(c.material instanceof THREE.SpriteMaterial)) {
-      if (!c.userData._matCloned) {
-        c.material = c.material.clone();
-        c.userData._matCloned = true;
-        c.userData._em = c.material.emissive ? c.material.emissive.getHex() : 0;
-      }
-      if (c.material.emissive) c.material.emissive.setHex(HIGHLIGHT);
-    }
-  });
-  // Bright cyan selection ring at the bunker's base — immediately obvious
   if (!g.userData._selRing) {
     const ring = new THREE.Mesh(
       new THREE.RingGeometry(2.5, 3.5, 40),
@@ -2637,19 +2986,13 @@ function highlightObj(g) {
     );
     ring.rotation.x = -Math.PI / 2;
     ring.position.y = 0.12;
-    ring.userData.root = g; // keep hit-testing working when ring is clicked
+    ring.userData.root = g;
     g.add(ring);
     g.userData._selRing = ring;
   }
 }
 
 function unhighlightObj(g) {
-  g.traverse(c => {
-    if (c.isMesh && c.userData._em !== undefined && c.material.emissive) {
-      c.material.emissive.setHex(c.userData._em);
-      c.userData._matCloned = false;
-    }
-  });
   if (g.userData._selRing) {
     g.remove(g.userData._selRing);
     g.userData._selRing.geometry.dispose();
@@ -2755,7 +3098,13 @@ canvas.addEventListener('pointerdown', e => {
   if (hits.length) {
     const g = hits[0].object.userData.root;
     if (!g) return;
-    select(g, e.shiftKey);
+    // If clicking an already-selected object without shift, keep the multi-select
+    // intact so the whole group can be dragged. Only update the drag anchor.
+    if (selSet.has(g) && selSet.size > 1 && !e.shiftKey) {
+      selected = g;
+    } else {
+      select(g, e.shiftKey);
+    }
 
     // Double-click to rename this bunker instance
     const now = Date.now();
@@ -2935,13 +3284,28 @@ labelsBtn.addEventListener('click', () => {
   refreshLabels();
 });
 
-// Bunkers: CLR / BLK toggle
-const bunkersBlackBtn = document.getElementById('btn-bunkers-black');
-bunkersBlackBtn.addEventListener('click', () => {
+// Context menu: BW toggle
+document.getElementById('ctx-toggle-bw').addEventListener('click', () => {
   bunkersBlack = !bunkersBlack;
-  bunkersBlackBtn.textContent = `Bunkers: ${bunkersBlack ? 'BLK' : 'CLR'}`;
-  bunkersBlackBtn.classList.toggle('on', bunkersBlack);
   applyBunkerColors();
+  closeCtxMenu();
+});
+
+// Context menu: per-bunker color picker
+document.getElementById('ctx-color-pick').addEventListener('input', e => {
+  if (!selected || selected.userData.kind !== 'bunker') return;
+  selected.userData.overrideColor = e.target.value;
+  applyBunkerColor(selected);
+  autoSave();
+});
+
+// Context menu: reset bunker color
+document.getElementById('ctx-recolor-reset').addEventListener('click', () => {
+  if (!selected || selected.userData.kind !== 'bunker') return;
+  selected.userData.overrideColor = null;
+  applyBunkerColor(selected);
+  autoSave();
+  closeCtxMenu();
 });
 
 // Screenshot
@@ -3017,17 +3381,30 @@ canvas.addEventListener('contextmenu', e => {
   const hits = raycaster.intersectObjects(pickMeshes);
   if (hits.length) {
     const g = hits[0].object.userData.root;
-    if (g) select(g);
+    if (g) {
+      // Preserve multi-select if right-clicking an already-selected object
+      if (selSet.has(g)) { selected = g; }
+      else select(g);
+    }
   }
   if (!selected) return;
 
   ctxMenu.style.left = e.clientX + 'px';
   ctxMenu.style.top  = e.clientY + 'px';
   ctxMenu.classList.add('open');
-  document.getElementById('ctx-rename').style.display =
-    (selected.userData.kind === 'bunker' || selected.userData.kind === 'player') ? 'block' : 'none';
-  document.getElementById('ctx-stance-group').style.display =
-    selected.userData.kind === 'player' ? 'block' : 'none';
+  const multi   = selSet.size > 1;
+  const isBunker = selected.userData.kind === 'bunker';
+  const isPlayer = selected.userData.kind === 'player';
+  // Rename only makes sense for a single object
+  document.getElementById('ctx-rename').style.display = (!multi && (isBunker || isPlayer)) ? 'block' : 'none';
+  document.getElementById('ctx-stance-group').style.display = isPlayer ? 'block' : 'none';
+  // Bunker color group: show when right-clicked obj is a bunker (not players)
+  document.getElementById('ctx-bunker-group').style.display = isBunker ? 'block' : 'none';
+  if (isBunker) {
+    document.getElementById('ctx-toggle-bw').textContent = `Bunkers: ${bunkersBlack ? 'Black ✓' : 'Color ✓'}`;
+    const current = selected.userData.overrideColor || selected.userData.bunker.color;
+    document.getElementById('ctx-color-pick').value = current.startsWith('#') ? current : '#' + current;
+  }
 });
 
 function closeCtxMenu() { ctxMenu.classList.remove('open'); }
@@ -3653,11 +4030,37 @@ const RELEASES = [
       '<strong>Additional fields</strong> — want your field represented in the app? Reach out to <a href="https://www.instagram.com/bryan.paintball/" target="_blank" rel="noopener" style="color:var(--blue)">@bryan.paintball</a> on Instagram',
     ],
   },
+  // ── v0.9 ───────────────────────────────────────────────────────────────────
+  {
+    version: 'v0.9',
+    date: 'Apr 2026',
+    badge: 'latest',
+    items: [
+      '<strong>Playbook system</strong> — save up to 8 plays per field; each play stores players + arrows while bunkers stay fixed; click a slot to auto-save current and switch',
+      '<strong>Dynamic play slots</strong> — starts with Play 1; tap + to add more slots as needed',
+      '<strong>Arrows follow camera</strong> — arrows are stored in 3D world space and re-projected every frame, so they rotate and zoom with the camera',
+      '<strong>Player paintball masks</strong> — every player wears a JT Proflex-style mask with randomised mask color, lens, skin tone, and hair',
+      '<strong>Weapon models</strong> — distinct AR-15 rifle, M870 shotgun, and Glock pistol silhouettes based on weapon selection',
+      '<strong>Player scale</strong> — figures scaled to 5\'10" for realistic field proportion',
+      '<strong>Players face midfield</strong> — newly placed players automatically face the centre line',
+      '<strong>Hold to rotate</strong> — holding CW / CCW buttons continuously rotates the selected object on both PC and mobile',
+      '<strong>Double-tap to rename</strong> — double-tap any placed bunker or player on mobile to rename it',
+      '<strong>Per-field layout memory</strong> — each field saves its own layout independently; switching fields no longer wipes your work',
+      '<strong>Reset to field default</strong> — ↺ button next to the field dropdown restores the original layout for that field',
+      '<strong>Bunker recolor</strong> — right-click any bunker to set a custom color or reset to default; global Color / Black toggle also moved to right-click menu',
+      '<strong>Selection ring only</strong> — removed emissive orange glow on selection; cyan ring is sufficient and doesn\'t interfere with recoloring',
+      '<strong>Multi-select drag fixed</strong> — clicking a member of a multi-selection no longer collapses it; drag moves the whole group',
+      '<strong>Multi-select context menu</strong> — right-clicking a selected object preserves the group selection; Rename hidden when multiple selected',
+      '<strong>Layout slots removed</strong> — replaced by the Playbook; Export Save / Import Save for full backups',
+      '<strong>Field Settings modal</strong> — field dimensions and environment colors moved to a dedicated modal',
+      '<strong>Controls & Tips modal</strong> — moved out of sidebar into a button near the app title',
+      '<strong>No backdrop blur on modals</strong> — scene remains fully visible behind modals',
+    ],
+  },
   // ── v0.8 ───────────────────────────────────────────────────────────────────
   {
     version: 'v0.8',
     date: 'Apr 2026',
-    badge: 'latest',
     items: [
       '<strong>Flip feature removed</strong> — bunkers can only be rotated, not flipped; H/V buttons and keyboard shortcuts removed',
       '<strong>Default layouts</strong> — both Project N1 and Tac City Airsoft load a ready-made symmetrical speedsoft layout on first open or field switch',
@@ -3809,6 +4212,31 @@ document.getElementById('sidebar').addEventListener('click', e => {
   if (e.target.closest('#btn-controls')) openControls();
 });
 
+// Field Settings modal
+const fieldSettingsModal = document.getElementById('field-settings-modal');
+function closeFieldSettings() { fieldSettingsModal.classList.remove('open'); }
+document.getElementById('btn-field-settings-close').addEventListener('click', closeFieldSettings);
+fieldSettingsModal.addEventListener('click', e => { if (e.target === fieldSettingsModal) closeFieldSettings(); });
+document.getElementById('fs-dim-w').addEventListener('change', () => {
+  activeField().width = Math.max(10, Math.min(300, parseInt(document.getElementById('fs-dim-w').value) || 50));
+  buildField();
+});
+document.getElementById('fs-dim-l').addEventListener('change', () => {
+  activeField().length = Math.max(10, Math.min(300, parseInt(document.getElementById('fs-dim-l').value) || 100));
+  buildField();
+});
+document.getElementById('fs-space-color').addEventListener('input', e => {
+  envSpaceColor = e.target.value;
+  localStorage.setItem('speedlayout_space_color', envSpaceColor);
+  applyEnvColors();
+});
+document.getElementById('fs-ground-color').addEventListener('input', e => {
+  envGroundColor = e.target.value;
+  localStorage.setItem('speedlayout_ground_color', envGroundColor);
+  buildField();
+  applyEnvColors();
+});
+
 // Controls & Tips modal
 const controlsModal = document.getElementById('controls-modal');
 function openControls() { controlsModal.classList.add('open'); }
@@ -3817,6 +4245,7 @@ document.getElementById('controls-close').addEventListener('click', closeControl
 controlsModal.addEventListener('click', e => { if (e.target === controlsModal) closeControls(); });
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape' && controlsModal.classList.contains('open')) closeControls();
+  if (e.key === 'Escape' && fieldSettingsModal.classList.contains('open')) closeFieldSettings();
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -3836,6 +4265,7 @@ loadAutosave(); // everything is declared — safe to restore or load default la
     controls.update();
   }
   renderer.render(scene, camera);
+  redrawArrows();
 })();
 </script>
 </body>
