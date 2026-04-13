@@ -873,12 +873,12 @@ body.sidebar-open #sidebar-toggle { display: none; }
     <div id="ctx-player-size-group" style="display:none">
       <div class="ctx-sep"></div>
       <div style="padding:5px 12px 2px">
-        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-bottom:3px"><span>Height</span><span id="ctx-height-val">100%</span></div>
-        <input type="range" id="ctx-height-slider" min="70" max="130" value="100" style="width:100%;accent-color:var(--blue)">
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-bottom:3px"><span>Height</span><span id="ctx-height-val">5'10"</span></div>
+        <input type="range" id="ctx-height-slider" min="60" max="84" value="70" style="width:100%;accent-color:var(--blue)">
       </div>
       <div style="padding:2px 12px 6px">
-        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-bottom:3px"><span>Width</span><span id="ctx-width-val">100%</span></div>
-        <input type="range" id="ctx-width-slider" min="70" max="150" value="100" style="width:100%;accent-color:var(--blue)">
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-bottom:3px"><span>Body Fat</span><span id="ctx-width-val">15%</span></div>
+        <input type="range" id="ctx-width-slider" min="5" max="50" value="15" style="width:100%;accent-color:var(--blue)">
       </div>
     </div>
     <div id="ctx-bunker-group" style="display:none">
@@ -1012,7 +1012,7 @@ body.sidebar-open #sidebar-toggle { display: none; }
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-const LAST_UPDATED = 'Apr 12, 2026 · 4:21 PM';
+const LAST_UPDATED = 'Apr 12, 2026 · 9:05 PM';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // FIELD DEFINITIONS  (placeholder bunkers — real data coming later)
@@ -1276,19 +1276,31 @@ function group(...children) {
 function mkCan(col) {
   const m = mesh(new THREE.CylinderGeometry(1.4, 1.4, 4, 18), col);
   m.position.y = 2;
-  return group(m);
+  const g = group(m);
+  g.userData.collisionBoxes = [
+    { min: { x: -1.4, z: -1.4 }, max: { x: 1.4, z: 1.4 } }
+  ];
+  return g;
 }
 
 function mkFatboy(col) {
   const m = mesh(new THREE.CylinderGeometry(2.8, 2.8, 4, 18), col);
   m.position.y = 2;
-  return group(m);
+  const g = group(m);
+  g.userData.collisionBoxes = [
+    { min: { x: -2.8, z: -2.8 }, max: { x: 2.8, z: 2.8 } }
+  ];
+  return g;
 }
 
 function mkCake(col) {
   const m = mesh(new THREE.CylinderGeometry(3.8, 3.8, 1.4, 24), col);
   m.position.y = 0.7;
-  return group(m);
+  const g = group(m);
+  g.userData.collisionBoxes = [
+    { min: { x: -3.8, z: -3.8 }, max: { x: 3.8, z: 3.8 } }
+  ];
+  return g;
 }
 
 // -- Triangles (Dorito = triangular prism)
@@ -1297,7 +1309,11 @@ function mkDorito(col, scale = 1) {
   const h = 3.5 * scale;
   const m = mesh(new THREE.CylinderGeometry(r, r, h, 3), col);
   m.position.y = h / 2;
-  return group(m);
+  const g = group(m);
+  g.userData.collisionBoxes = [
+    { min: { x: -r, z: -r }, max: { x: r, z: r } }
+  ];
+  return g;
 }
 
 function mkMiniDorito(col) { return mkDorito(col, 0.55); }
@@ -1306,19 +1322,31 @@ function mkMiniDorito(col) { return mkDorito(col, 0.55); }
 function mkBrick(col) {
   const m = mesh(new THREE.BoxGeometry(9, 2, 2.5), col);
   m.position.y = 1;
-  return group(m);
+  const g = group(m);
+  g.userData.collisionBoxes = [
+    { min: { x: -4.5, z: -1.25 }, max: { x: 4.5, z: 1.25 } }
+  ];
+  return g;
 }
 
 function mkTombstone(col) {
   const m = mesh(new THREE.BoxGeometry(3, 5.5, 1.5), col);
   m.position.y = 2.75;
-  return group(m);
+  const g = group(m);
+  g.userData.collisionBoxes = [
+    { min: { x: -1.5, z: -0.75 }, max: { x: 1.5, z: 0.75 } }
+  ];
+  return g;
 }
 
 function mkSupAir(col) {
   const m = mesh(new THREE.BoxGeometry(7, 5, 1.5), col);
   m.position.y = 2.5;
-  return group(m);
+  const g = group(m);
+  g.userData.collisionBoxes = [
+    { min: { x: -3.5, z: -0.75 }, max: { x: 3.5, z: 0.75 } }
+  ];
+  return g;
 }
 
 // -- Snakes (S-curve via rotated box segments)
@@ -1336,7 +1364,13 @@ function mkSnake(col, scale = 1) {
     m.rotation.y = s.ry;
     return m;
   });
-  return group(...children);
+  const g = group(...children);
+  const halfW = 3.2 * scale / 2 + 0.65 * scale;
+  g.userData.collisionBoxes = segs.map(s => ({
+    min: { x: s.x - halfW, z: s.z - halfW },
+    max: { x: s.x + halfW, z: s.z + halfW }
+  }));
+  return g;
 }
 
 function mkMiniSnake(col) { return mkSnake(col, 0.6); }
@@ -1348,7 +1382,12 @@ function mkTCK(col) {
   stem.position.set(0, 2.25, 0);
   const bar = mesh(new THREE.BoxGeometry(7, 4.5, 1.8), col);
   bar.position.set(0, 2.25, -3.65);
-  return group(stem, bar);
+  const g = group(stem, bar);
+  g.userData.collisionBoxes = [
+    { min: { x: -0.9, z: -2.75, y: 0 }, max: { x: 0.9, z: 2.75, y: 4.5 } },
+    { min: { x: -3.5, z: -4.6, y: 0 }, max: { x: 3.5, z: -2.2, y: 4.5 } }
+  ];
+  return g;
 }
 
 function mkCorner(col) {
@@ -1356,7 +1395,12 @@ function mkCorner(col) {
   a.position.set(0, 1.5, 0);
   const b = mesh(new THREE.BoxGeometry(1.8, 3, 5.2), col);
   b.position.set(-4.6, 1.5, -3.5);
-  return group(a, b);
+  const g = group(a, b);
+  g.userData.collisionBoxes = [
+    { min: { x: -3.5, z: -0.9, y: 0 }, max: { x: 3.5, z: 0.9, y: 3 } },
+    { min: { x: -5.5, z: -6.1, y: 0 }, max: { x: -3.7, z: -0.9, y: 3 } }
+  ];
+  return g;
 }
 
 function mkXBunker(col) {
@@ -1364,7 +1408,12 @@ function mkXBunker(col) {
   h1.position.y = 1.75;
   const h2 = mesh(new THREE.BoxGeometry(1.8, 3.5, 9), col);
   h2.position.y = 1.75;
-  return group(h1, h2);
+  const g = group(h1, h2);
+  g.userData.collisionBoxes = [
+    { min: { x: -4.5, z: -0.9, y: 0 }, max: { x: 4.5, z: 0.9, y: 3.5 } },
+    { min: { x: -0.9, z: -4.5, y: 0 }, max: { x: 0.9, z: 4.5, y: 3.5 } }
+  ];
+  return g;
 }
 
 const FACTORIES = {
@@ -1396,8 +1445,8 @@ function snapshotPlay() {
       playerName:   g.userData.playerName || '',
       stance:       g.userData.stance || 'standing',
       faceIndex:    g.userData.faceIndex ?? 0,
-      playerHeight: g.userData.playerHeight ?? 1,
-      playerWidth:  g.userData.playerWidth  ?? 1,
+      playerHeight: g.userData.playerHeight ?? HEIGHT_BASELINE,
+      playerWidth:  g.userData.playerWidth  ?? BODYFAT_NORMAL,
       rotY:         g.rotation.y,
       x: g.position.x, z: g.position.z,
     })),
@@ -1410,10 +1459,8 @@ function restorePlay(snap) {
   players.forEach(g => scene.remove(g));
   players = [];
   deselect();
-  // Restore arrows
   arrowStrokes = (snap.arrows || []).map(s => ({ ...s }));
   redrawArrows();
-  // Restore players
   snap.players.forEach(p => {
     const savedTeam   = playerTeam;
     const savedWeapon = playerWeapon;
@@ -1425,8 +1472,8 @@ function restorePlay(snap) {
     if (pg && p.stance && p.stance !== 'standing') setPlayerStance(pg, p.stance, true);
     if (pg) pg.rotation.y = p.rotY ?? pg.rotation.y;
     if (pg) {
-      pg.userData.playerHeight = p.playerHeight ?? 1;
-      pg.userData.playerWidth  = p.playerWidth  ?? 1;
+      pg.userData.playerHeight = p.playerHeight ?? HEIGHT_BASELINE;
+      pg.userData.playerWidth  = p.playerWidth  ?? BODYFAT_NORMAL;
       applyPlayerScale(pg);
     }
     playerTeam   = savedTeam;
@@ -1487,8 +1534,8 @@ function snapshotState() {
       playerName:  g.userData.playerName || '',
       stance:      g.userData.stance || 'standing',
       faceIndex:   g.userData.faceIndex ?? 0,
-      playerHeight: g.userData.playerHeight ?? 1,
-      playerWidth:  g.userData.playerWidth  ?? 1,
+      playerHeight: g.userData.playerHeight ?? HEIGHT_BASELINE,
+      playerWidth:  g.userData.playerWidth  ?? BODYFAT_NORMAL,
       rotY:        g.rotation.y,
       x: g.position.x, z: g.position.z,
     })),
@@ -1529,8 +1576,8 @@ function restoreState(snap) {
     if (pg && p.stance && p.stance !== 'standing') setPlayerStance(pg, p.stance, true);
     if (pg && p.rotY) pg.rotation.y = p.rotY;
     if (pg) {
-      pg.userData.playerHeight = p.playerHeight ?? 1;
-      pg.userData.playerWidth  = p.playerWidth  ?? 1;
+      pg.userData.playerHeight = p.playerHeight ?? HEIGHT_BASELINE;
+      pg.userData.playerWidth  = p.playerWidth  ?? BODYFAT_NORMAL;
       applyPlayerScale(pg);
     }
     playerTeam   = savedTeam;
@@ -2529,17 +2576,6 @@ function placeBunker(type, pos, rotY = 0) {
       c.userData.root = g;
     }
   });
-  // Cache bounding box in LOCAL space (rotation=0) for OBB-based FPS collision
-  const _lb = new THREE.Box3();
-  g.traverse(c => {
-    if (c.isMesh && c.geometry) {
-      c.geometry.computeBoundingBox();
-      if (c.geometry.boundingBox) {
-        _lb.union(c.geometry.boundingBox.clone().applyMatrix4(c.matrix));
-      }
-    }
-  });
-  g.userData.localBox = _lb;
   scene.add(g);
   placed.push(g);
   if (showLabels) attachLabel(g);
@@ -2881,8 +2917,8 @@ function buildPlayerMeshes(g, team, stance) {
 
   const face        = g.userData.faceIndex  ?? 0;
   const weapon      = g.userData.weapon     ?? 'rifle';
-  const playerWidth = g.userData.playerWidth ?? 1;
-  const bellyBulge  = Math.max(0, playerWidth - 1.0);
+  const bodyFat     = g.userData.playerWidth ?? BODYFAT_NORMAL;
+  const bellyBulge  = Math.max(0, (bodyFat - 10) / 30); // belly starts showing at ~10%, increases with body fat
 
   const addWeapon = (wpn, pos, rx, ry, rz) => {
     const wm = makeWeaponMesh(wpn);
@@ -2893,13 +2929,13 @@ function buildPlayerMeshes(g, team, stance) {
     g.add(wm);
   };
 
-  // Belly helper — protrudes forward (-Z) based on bellyBulge
-  const addBelly = (yPos, zBase) => {
-    if (bellyBulge < 0.02) return;
-    const r = 0.36 + bellyBulge * 0.55;
+  // Belly helper — sphere that pushes out the jersey front
+  const addBelly = (bellyY, torsoFrontZ) => {
+    if (bellyBulge < 0.05) return;
+    const r = 0.32 + bellyBulge * 0.6;
     const belly = new THREE.Mesh(new THREE.SphereGeometry(r, 12, 10), bm());
-    belly.position.set(0, yPos, zBase - bellyBulge * 0.22);
-    belly.scale.set(1.05 + bellyBulge * 0.25, 0.85, 1.0);
+    belly.position.set(0, bellyY, torsoFrontZ + 0.02);
+    belly.scale.set(1.0 + bellyBulge * 0.3, 0.8, 1.0);
     belly.userData.root = g; g.add(belly);
   };
 
@@ -2931,7 +2967,7 @@ function buildPlayerMeshes(g, team, stance) {
     armR.position.set( 0.72, 2.3, 0.4); armR.rotation.z = -0.5; armR.rotation.x = 0.55;
     add(legL, legR, hips, torso, head, armL, armR);
     addButtcheeks(1.55, 0.52);
-    addBelly(2.3, -0.10);
+    addBelly(2.3, -0.15); // belly Y and torso front Z for crouching
     addWeapon(weapon, new THREE.Vector3(0.55, 2.4, -0.8), 0.5, 0, 0);
     if (isCarp) {
       addSerapeStripes(g);
@@ -2999,7 +3035,7 @@ function buildPlayerMeshes(g, team, stance) {
     armR.position.set( 0.75, 4.15, 0); armR.rotation.z = -0.25;
     add(legL, legR, hips, torso, head, armL, armR);
     addButtcheeks(3.05, 0.36);
-    addBelly(3.85, -0.28);
+    addBelly(3.85, -0.275); // belly Y and torso front Z for standing
     addWeapon(weapon, new THREE.Vector3(0.55, 4.2, -0.9), 0.25, 0, -0.15);
     if (isCarp) {
       addSerapeStripes(g);
@@ -3048,14 +3084,23 @@ function getPlayerGroundY(x, z) {
   return Math.max(0, hits[0].point.y);
 }
 
-// 1 scene unit = 1 ft. A player is 5'10" = 5.833 ft.
+// 1 scene unit = 1 ft. A player is 5'10" = 70 inches (baseline).
 // Standing figure top-of-head = ~6.10 units → scale = 5.833/6.10 ≈ 0.957
 const PLAYER_SCALE = 5.833 / 6.10;
+const HEIGHT_BASELINE = 70; // 5'10" in inches
+const BODYFAT_NORMAL = 15; // normal body fat percentage
+
+function formatHeight(inches) {
+  const feet = Math.floor(inches / 12);
+  const remaining = inches % 12;
+  return `${feet}'${remaining}"`;
+}
 
 function applyPlayerScale(g) {
-  const h = g.userData.playerHeight ?? 1;
+  const h = g.userData.playerHeight ?? HEIGHT_BASELINE;
+  const mult = h / HEIGHT_BASELINE;
   // Width is expressed via belly mesh in buildPlayerMeshes, not scale
-  g.scale.set(PLAYER_SCALE, PLAYER_SCALE * h, PLAYER_SCALE);
+  g.scale.set(PLAYER_SCALE, PLAYER_SCALE * mult, PLAYER_SCALE);
 }
 
 function placePlayer(pos) {
@@ -3071,8 +3116,10 @@ function placePlayer(pos) {
   g.userData.playerName   = '';
   g.userData.stance       = 'standing';
   g.userData.faceIndex    = Math.floor(Math.random() * 125); // random face seed
-  g.userData.playerHeight = 1;
-  g.userData.playerWidth  = 1;
+  g.userData.playerHeight = Math.floor(Math.random() * 12) + 64; // random 5'4" to 6'3"
+  g.userData.playerWidth  = Math.random() < 0.2
+    ? Math.floor(Math.random() * 16) + 25  // 20% chance: obese (25-40%)
+    : Math.floor(Math.random() * 11) + 10; // 80% chance: normal (10-20%)
   // Scale to real-world 5'10" proportional to 1 unit = 1 ft field
   applyPlayerScale(g);
 
@@ -3596,11 +3643,11 @@ canvas.addEventListener('contextmenu', e => {
   document.getElementById('ctx-stance-group').style.display = isPlayer ? 'block' : 'none';
   document.getElementById('ctx-player-size-group').style.display = isPlayer ? 'block' : 'none';
   if (isPlayer) {
-    const h = Math.round((selected.userData.playerHeight ?? 1) * 100);
-    const w = Math.round((selected.userData.playerWidth  ?? 1) * 100);
+    const h = selected.userData.playerHeight ?? HEIGHT_BASELINE;
+    const w = selected.userData.playerWidth ?? BODYFAT_NORMAL;
     document.getElementById('ctx-height-slider').value = h;
     document.getElementById('ctx-width-slider').value  = w;
-    document.getElementById('ctx-height-val').textContent = h + '%';
+    document.getElementById('ctx-height-val').textContent = formatHeight(h);
     document.getElementById('ctx-width-val').textContent  = w + '%';
   }
   // Bunker color group: show when right-clicked obj is a bunker (not players)
@@ -3620,16 +3667,14 @@ document.addEventListener('pointerdown', e => {
 // Player size sliders
 document.getElementById('ctx-height-slider').addEventListener('input', e => {
   if (!selected || selected.userData.kind !== 'player') return;
-  const v = parseInt(e.target.value) / 100;
-  selected.userData.playerHeight = v;
-  document.getElementById('ctx-height-val').textContent = e.target.value + '%';
+  selected.userData.playerHeight = parseInt(e.target.value);
+  document.getElementById('ctx-height-val').textContent = formatHeight(parseInt(e.target.value));
   applyPlayerScale(selected);
   autoSave();
 });
 document.getElementById('ctx-width-slider').addEventListener('input', e => {
   if (!selected || selected.userData.kind !== 'player') return;
-  const v = parseInt(e.target.value) / 100;
-  selected.userData.playerWidth = v;
+  selected.userData.playerWidth = parseInt(e.target.value);
   document.getElementById('ctx-width-val').textContent = e.target.value + '%';
   // Rebuild meshes so belly appears/grows
   setPlayerStance(selected, selected.userData.stance, true);
@@ -3872,7 +3917,10 @@ function applyFpsCamera() {
 
   // Determine base speed
   const isSprinting = keysHeld.has('Shift');
-  const baseSpeed = 0.3 * (isSprinting ? 2 : 1);
+  let speedMult = 1;
+  if (fpsState === 'crouch') speedMult = 0.5;
+  if (fpsState === 'crawl') speedMult = 0.25;
+  const baseSpeed = 0.3 * speedMult * (isSprinting ? 2 : 1);
 
   const flat  = new THREE.Vector3(-Math.sin(fpsYaw), 0, -Math.cos(fpsYaw));
   const right = new THREE.Vector3().crossVectors(flat, new THREE.Vector3(0,1,0)).normalize();
@@ -3900,29 +3948,38 @@ function applyFpsCamera() {
   camera.position.x = Math.max(-hw + 1, Math.min(hw - 1, camera.position.x));
   camera.position.z = Math.max(-hh + 1, Math.min(hh - 1, camera.position.z));
 
-  // Bunker collision — test in the bunker's LOCAL space so rotation is respected (OBB)
-  const PLAYER_RADIUS = 1.2;
+  // Bunker collision — use per-piece collision boxes with explicit Y bounds
+  const PLAYER_RADIUS = 0.6;
   const _invMat   = new THREE.Matrix4();
   const _localCam = new THREE.Vector3();
   const _pushDir  = new THREE.Vector3();
+  const playerFeet = camera.position.y - fpsEyeH;
+  
   for (const g of placed) {
-    const lb = g.userData.localBox;
-    if (!lb) continue;
+    const boxes = g.userData.collisionBoxes;
+    if (!boxes || boxes.length === 0) continue;
     g.updateWorldMatrix(true, false);
     _invMat.copy(g.matrixWorld).invert();
     _localCam.copy(camera.position).applyMatrix4(_invMat);
-    const lx = _localCam.x, lz = _localCam.z;
-    if (lx > lb.min.x - PLAYER_RADIUS && lx < lb.max.x + PLAYER_RADIUS &&
-        lz > lb.min.z - PLAYER_RADIUS && lz < lb.max.z + PLAYER_RADIUS) {
-      const cx = (lb.min.x + lb.max.x) / 2, cz = (lb.min.z + lb.max.z) / 2;
-      const halfW = (lb.max.x - lb.min.x) / 2 + PLAYER_RADIUS;
-      const halfD = (lb.max.z - lb.min.z) / 2 + PLAYER_RADIUS;
-      const ox = halfW - Math.abs(lx - cx);
-      const oz = halfD - Math.abs(lz - cz);
-      if (ox < oz) _pushDir.set(Math.sign(lx - cx), 0, 0);
-      else         _pushDir.set(0, 0, Math.sign(lz - cz));
-      _pushDir.transformDirection(g.matrixWorld);
-      camera.position.addScaledVector(_pushDir, Math.min(ox, oz));
+    
+    for (const lb of boxes) {
+      const lx = _localCam.x, lz = _localCam.z;
+      // Check Y bounds (collision only up to bunker height)
+      if (lb.min.y !== undefined && (playerFeet > lb.max.y || camera.position.y < lb.min.y)) continue;
+      
+      if (lx > lb.min.x - PLAYER_RADIUS && lx < lb.max.x + PLAYER_RADIUS &&
+          lz > lb.min.z - PLAYER_RADIUS && lz < lb.max.z + PLAYER_RADIUS) {
+        const cx = (lb.min.x + lb.max.x) / 2, cz = (lb.min.z + lb.max.z) / 2;
+        const halfW = (lb.max.x - lb.min.x) / 2 + PLAYER_RADIUS;
+        const halfD = (lb.max.z - lb.min.z) / 2 + PLAYER_RADIUS;
+        const ox = halfW - Math.abs(lx - cx);
+        const oz = halfD - Math.abs(lz - cz);
+        if (ox < oz) _pushDir.set(Math.sign(lx - cx), 0, 0);
+        else         _pushDir.set(0, 0, Math.sign(lz - cz));
+        _pushDir.transformDirection(g.matrixWorld);
+        camera.position.addScaledVector(_pushDir, Math.min(ox, oz));
+        break;
+      }
     }
   }
 
@@ -3960,9 +4017,10 @@ document.addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') return;
 
   // Track movement keys in both FPS and orbit freecam modes
-  const MOVE_KEYS = ['w','a','s','d','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'];
+  const MOVE_KEYS = ['w','a','s','d','W','A','S','D','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'];
   if (MOVE_KEYS.includes(e.key) && !e.ctrlKey && !e.metaKey) {
-    keysHeld.add(e.key);
+    keysHeld.add(e.key.toLowerCase());
+    if (e.shiftKey) keysHeld.add('Shift');
     if (walkMode) e.preventDefault();
   }
   // Space=up / Shift=down for 3D orbit freecam
@@ -3970,9 +4028,13 @@ document.addEventListener('keydown', e => {
     keysHeld.add(e.key);
     if (e.key === ' ') e.preventDefault(); // prevent page scroll
   }
+  // Track Shift in walkMode too (for sprint)
+  if (walkMode && (e.key === 'Shift' || e.shiftKey)) {
+    keysHeld.add('Shift');
+  }
 
   if (walkMode) {
-    if (WALK_KEYS.has(e.key)) { keysHeld.add(e.key); /* already added above */ }
+    if (WALK_KEYS.has(e.key.toLowerCase())) { keysHeld.add(e.key.toLowerCase()); /* already added above */ }
     if (e.key === 'Escape' || e.key === 'f' || e.key === 'F') { exitWalkMode(); return; }
     if (e.key === 'c' || e.key === 'C') {
       const isSprinting = keysHeld.has('Shift');
@@ -3997,8 +4059,8 @@ document.addEventListener('keydown', e => {
       e.preventDefault(); return;
     }
     if (e.key === ' ') {
-      // vertVel = sqrt(2 * gravity * jumpHeight) = sqrt(2 * 0.018 * 1.5) ≈ 0.232
-      if (fpsOnGround) { vertVel = 0.232; fpsOnGround = false; }
+      // vertVel = sqrt(2 * gravity * jumpHeight) = sqrt(2 * 0.018 * 4) ≈ 0.38
+      if (fpsOnGround) { vertVel = 0.38; fpsOnGround = false; }
       e.preventDefault();
     }
     return;
@@ -4029,7 +4091,13 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') { deselect(); disarm(); setMode('select'); }
 });
 
-document.addEventListener('keyup', e => keysHeld.delete(e.key));
+document.addEventListener('keyup', e => {
+  const key = e.key.toLowerCase();
+  if (key === 'shift') {
+    keysHeld.delete('Shift');
+  }
+  keysHeld.delete(key);
+});
 window.addEventListener('blur',    ()  => keysHeld.clear());
 
 // ─────────────────────────────────────────────────────────────────────────────
