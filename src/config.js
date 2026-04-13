@@ -1,4 +1,4 @@
-export const LAST_UPDATED = 'Apr 12, 2026 · 10:56 PM';
+export const LAST_UPDATED = 'Apr 12, 2026 · 11:11 PM';
 
 export const FIELD_DEFS = {
   project_n1: {
@@ -141,9 +141,22 @@ export const RELEASES = [
     ],
   },
   {
-    version: 'v1.0',
+    version: 'v1.1',
     date: 'Apr 2026',
     badge: 'latest',
+    items: [
+      '<strong>Arrow controls update</strong> — in Arrow mode, left-drag draws arrows and right-drag rotates camera, including Shot (dotted) arrows',
+      '<strong>State restore + undo fixes</strong> — fixed player rotation restore for 0° facing and corrected rename undo order so Ctrl+Z returns to the prior name state',
+      '<strong>Playbook clear cleanup</strong> — clearing a play now also clears stale selection state to avoid follow-up action glitches',
+      '<strong>Input and memory stability</strong> — improved mobile long-press context behavior and disposed label sprite textures/materials to prevent GPU leaks over time',
+      '<strong>Security hardening</strong> — escaped imported/saved play and bunker text before rendering to block HTML injection in sidebar UI',
+      '<strong>Codebase modularization</strong> — split large inline script data/helpers into dedicated modules (`config`, `ui-utils`, `storage`, `persistence`) for easier maintenance',
+    ],
+  },
+  {
+    version: 'v1.0',
+    date: 'Apr 2026',
+    badge: '',
     items: [
       '<strong>Unlimited play slots</strong> — no more 8-play cap; add as many plays as you need with the + button',
       '<strong>Export Save includes everything</strong> — Export Save now saves all play slots, arrows, playbook state, and field data in one file',
