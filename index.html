@@ -1995,6 +1995,13 @@ let arrowColor = '#ff453a';
 let arrowWidth = 3;
 let arrowType  = 'move';     // 'move' | 'shoot'
 
+function refreshArrowInputMode() {
+  const shotTrackMode = mode === 'arrow' && arrowType === 'shoot';
+  // In shot mode, pass left-click through to the 3D canvas so OrbitControls can rotate.
+  arrowCanvas.style.pointerEvents = shotTrackMode ? 'none' : '';
+  controls.mouseButtons.LEFT = shotTrackMode ? THREE.MOUSE.ROTATE : null;
+}
+
 function resizeArrowCanvas() {
   const r = wrap.getBoundingClientRect();
   arrowCanvas.width  = r.width;
@@ -2077,32 +2084,25 @@ function clearAllArrows() {
   redrawArrows();
 }
 
-// Arrow canvas pointer events
-arrowCanvas.addEventListener('pointerdown', e => {
-  if (mode !== 'arrow') return;
-  e.preventDefault();
-  arrowCanvas.setPointerCapture(e.pointerId);
+function beginArrowStroke(e, target) {
   const startPt = arrowWorldPt(e.clientX, e.clientY);
   if (!startPt) return;
+  target.setPointerCapture?.(e.pointerId);
   currentStroke = {
     pts: arrowType === 'shoot' ? [startPt, { ...startPt }] : [startPt],
     color: arrowColor, width: arrowWidth, type: arrowType
   };
-});
+}
 
-arrowCanvas.addEventListener('pointermove', e => {
+function updateArrowStroke(e) {
   if (!currentStroke) return;
-  e.preventDefault();
   const pt = arrowWorldPt(e.clientX, e.clientY);
   if (!pt) return;
-  if (currentStroke.type === 'shoot') {
-    currentStroke.pts[1] = pt;
-  } else {
-    currentStroke.pts.push(pt);
-  }
-});
+  if (currentStroke.type === 'shoot') currentStroke.pts[1] = pt;
+  else currentStroke.pts.push(pt);
+}
 
-arrowCanvas.addEventListener('pointerup', e => {
+function endArrowStroke() {
   if (!currentStroke) return;
   if (currentStroke.pts.length > 1) {
     pushArrowUndo();
@@ -2110,11 +2110,44 @@ arrowCanvas.addEventListener('pointerup', e => {
   }
   currentStroke = null;
   redrawArrows();
+}
+
+// Arrow canvas pointer events
+arrowCanvas.addEventListener('pointerdown', e => {
+  if (mode !== 'arrow') return;
+  e.preventDefault();
+  beginArrowStroke(e, arrowCanvas);
+});
+
+arrowCanvas.addEventListener('pointermove', e => {
+  if (!currentStroke) return;
+  e.preventDefault();
+  updateArrowStroke(e);
+});
+
+arrowCanvas.addEventListener('pointerup', e => {
+  endArrowStroke();
 });
 
 arrowCanvas.addEventListener('pointercancel', () => {
   currentStroke = null;
   redrawArrows();
+});
+
+// In shot mode, allow camera rotate on plain left-drag.
+// Hold Shift + left-drag to draw a shot arrow.
+canvas.addEventListener('pointerdown', e => {
+  if (mode !== 'arrow' || arrowType !== 'shoot' || e.button !== 0 || !e.shiftKey) return;
+  e.preventDefault();
+  beginArrowStroke(e, canvas);
+});
+canvas.addEventListener('pointermove', e => {
+  if (mode !== 'arrow' || arrowType !== 'shoot' || !currentStroke) return;
+  updateArrowStroke(e);
+});
+canvas.addEventListener('pointerup', e => {
+  if (mode !== 'arrow' || arrowType !== 'shoot' || !currentStroke) return;
+  endArrowStroke();
 });
 
 // Arrow toolbar controls
@@ -2244,6 +2277,7 @@ function setMode(m) {
     document.getElementById('btn-multi-select').classList.remove('on');
   }
   canvas.style.cursor = m === 'player' ? 'cell' : 'default';
+  refreshArrowInputMode();
 }
 
 document.getElementById('btn-mode-select').addEventListener('click', () => setMode('select'));
@@ -4018,6 +4052,7 @@ document.querySelectorAll('.arrow-type-btn').forEach(btn => {
         b.classList.toggle('on', b.dataset.color === defaultColor);
       });
     }
+    refreshArrowInputMode();
   });
 });
 
