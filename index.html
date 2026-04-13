@@ -1011,68 +1011,14 @@ body.sidebar-open #sidebar-toggle { display: none; }
 <script type="module">
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-
-const LAST_UPDATED = 'Apr 12, 2026 · 9:05 PM';
+import { LAST_UPDATED, FIELD_DEFS, DEFAULT_LAYOUTS, RELEASES } from './src/config.js';
+import { escapeHtml, svgIcon } from './src/ui-utils.js';
+import { AUTOSAVE_KEY, slotKey, playKey, playCountKey, fieldSaveKey } from './src/storage.js';
+import { makePlaySnapshot, makeStateSnapshot } from './src/persistence.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // FIELD DEFINITIONS  (placeholder bunkers — real data coming later)
 // ─────────────────────────────────────────────────────────────────────────────
-
-const FIELD_DEFS = {
-  project_n1: {
-    label: 'Project N1',
-    width: 50, length: 100,   // ft — placeholder until measured
-    bunkers: [
-      { id: 'can',        label: 'Can',        desc: 'Medium cylinder', color: '#10b981', cat: 'Cylinders' },
-      { id: 'fatboy',     label: 'Fatboy',     desc: 'Large cylinder',  color: '#ef4444', cat: 'Cylinders' },
-      { id: 'cake',       label: 'Cake',       desc: 'Wide flat disk',  color: '#ec4899', cat: 'Cylinders' },
-      { id: 'dorito',     label: 'Dorito',     desc: 'Triangle prism',  color: '#f59e0b', cat: 'Triangles' },
-      { id: 'mini_dorito',label: 'Mini Dorito',desc: 'Small triangle',  color: '#fbbf24', cat: 'Triangles' },
-      { id: 'brick',      label: 'Brick',      desc: 'Wide low wall',   color: '#8b5cf6', cat: 'Rectangles' },
-      { id: 'tombstone',  label: 'Tombstone',  desc: 'Tall thin wall',  color: '#06b6d4', cat: 'Rectangles' },
-      { id: 'sup_air',    label: "Sup'Air",    desc: 'Tall wide wall',  color: '#3b82f6', cat: 'Rectangles' },
-      { id: 'snake',      label: 'Snake',      desc: 'Full S-shape',    color: '#6366f1', cat: 'Snakes' },
-      { id: 'mini_snake', label: 'Mini Snake', desc: 'Half S-shape',    color: '#818cf8', cat: 'Snakes' },
-      { id: 'tck',        label: 'TCK',        desc: 'T-shape bunker',  color: '#f97316', cat: 'Complex' },
-      { id: 'corner',     label: 'Corner',     desc: 'L-shape corner',  color: '#84cc16', cat: 'Complex' },
-      { id: 'x_bunker',   label: 'X-Bunker',  desc: 'Cross shape',     color: '#a78bfa', cat: 'Complex' },
-    ]
-  },
-  tac_city: {
-    label: 'Tac City Airsoft',
-    width: 50, length: 100,   // ft — placeholder until measured
-    bunkers: [
-      { id: 'can',        label: 'Can',        desc: 'Medium cylinder', color: '#10b981', cat: 'Cylinders' },
-      { id: 'fatboy',     label: 'Fatboy',     desc: 'Large cylinder',  color: '#ef4444', cat: 'Cylinders' },
-      { id: 'dorito',     label: 'Dorito',     desc: 'Triangle prism',  color: '#f59e0b', cat: 'Triangles' },
-      { id: 'brick',      label: 'Brick',      desc: 'Wide low wall',   color: '#8b5cf6', cat: 'Rectangles' },
-      { id: 'tombstone',  label: 'Tombstone',  desc: 'Tall thin wall',  color: '#06b6d4', cat: 'Rectangles' },
-      { id: 'sup_air',    label: "Sup'Air",    desc: 'Tall wide wall',  color: '#3b82f6', cat: 'Rectangles' },
-      { id: 'snake',      label: 'Snake',      desc: 'Full S-shape',    color: '#6366f1', cat: 'Snakes' },
-      { id: 'tck',        label: 'TCK',        desc: 'T-shape bunker',  color: '#f97316', cat: 'Complex' },
-      { id: 'corner',     label: 'Corner',     desc: 'L-shape corner',  color: '#84cc16', cat: 'Complex' },
-    ]
-  },
-  adrenaline: {
-    label: 'Adrenaline Paintball',
-    width: 50, length: 100,   // ft — placeholder until measured
-    bunkers: [
-      { id: 'can',        label: 'Can',        desc: 'Medium cylinder', color: '#ff2d55', cat: 'Cylinders' },
-      { id: 'fatboy',     label: 'Fatboy',     desc: 'Large cylinder',  color: '#ff9500', cat: 'Cylinders' },
-      { id: 'cake',       label: 'Cake',       desc: 'Wide flat disk',  color: '#ffcc00', cat: 'Cylinders' },
-      { id: 'dorito',     label: 'Dorito',     desc: 'Triangle prism',  color: '#34c759', cat: 'Triangles' },
-      { id: 'mini_dorito',label: 'Mini Dorito',desc: 'Small triangle',  color: '#5ac8fa', cat: 'Triangles' },
-      { id: 'brick',      label: 'Brick',      desc: 'Wide low wall',   color: '#007aff', cat: 'Rectangles' },
-      { id: 'tombstone',  label: 'Tombstone',  desc: 'Tall thin wall',  color: '#af52de', cat: 'Rectangles' },
-      { id: 'sup_air',    label: "Sup'Air",    desc: 'Tall wide wall',  color: '#ff3b30', cat: 'Rectangles' },
-      { id: 'snake',      label: 'Snake',      desc: 'Full S-shape',    color: '#30d158', cat: 'Snakes' },
-      { id: 'mini_snake', label: 'Mini Snake', desc: 'Half S-shape',    color: '#64d2ff', cat: 'Snakes' },
-      { id: 'tck',        label: 'TCK',        desc: 'T-shape bunker',  color: '#ff6b00', cat: 'Complex' },
-      { id: 'corner',     label: 'Corner',     desc: 'L-shape corner',  color: '#ffd60a', cat: 'Complex' },
-      { id: 'x_bunker',   label: 'X-Bunker',  desc: 'Cross shape',     color: '#ff375f', cat: 'Complex' },
-    ]
-  }
-};
 
 let activeFieldId = 'project_n1';
 function activeField() { return FIELD_DEFS[activeFieldId]; }
@@ -1429,29 +1375,20 @@ const FACTORIES = {
 // ─────────────────────────────────────────────────────────────────────────────
 
 let activeSlot = 0;
-const SLOT_KEY = i => `speedlayout_slot_${i}`;
 
 // ── Playbook (players + arrows only) ─────────────────────────────────────────
 let activePlay = 0;
-function PLAY_KEY(i) { return `speedlayout_play_${activeFieldId}_${i}`; }
-function PLAY_COUNT_KEY() { return `speedlayout_play_count_${activeFieldId}`; }
+function PLAY_KEY(i) { return playKey(activeFieldId, i); }
+function PLAY_COUNT_KEY() { return playCountKey(activeFieldId); }
 let playCount  = Math.max(1, parseInt(localStorage.getItem(PLAY_COUNT_KEY()) || '1'));
 
 function snapshotPlay() {
-  return {
-    players: players.map(g => ({
-      team:         g.userData.team,
-      weapon:       g.userData.weapon,
-      playerName:   g.userData.playerName || '',
-      stance:       g.userData.stance || 'standing',
-      faceIndex:    g.userData.faceIndex ?? 0,
-      playerHeight: g.userData.playerHeight ?? HEIGHT_BASELINE,
-      playerWidth:  g.userData.playerWidth  ?? BODYFAT_NORMAL,
-      rotY:         g.rotation.y,
-      x: g.position.x, z: g.position.z,
-    })),
-    arrows: arrowStrokes.map(s => ({ ...s })),
-  };
+  return makePlaySnapshot({
+    players,
+    arrowStrokes,
+    heightBaseline: HEIGHT_BASELINE,
+    bodyFatNormal: BODYFAT_NORMAL,
+  });
 }
 
 function restorePlay(snap) {
@@ -1515,35 +1452,19 @@ function snapshotState() {
     const d = localStorage.getItem(PLAY_KEY(i));
     if (d) { try { plays[i] = JSON.parse(d); } catch(e) {} }
   }
-  return {
-    version: 2,
-    fieldId: activeFieldId,
-    fieldW:  activeField().width,
-    fieldL:  activeField().length,
-    placed:  placed.map(g => ({
-      type:          g.userData.bunker.id,
-      label:         g.userData.bunker.label,
-      overrideColor: g.userData.overrideColor || null,
-      x: g.position.x, z: g.position.z,
-      rotY:   g.rotation.y,
-      scaleX: g.scale.x, scaleZ: g.scale.z,
-    })),
-    players: players.map(g => ({
-      team:        g.userData.team,
-      weapon:      g.userData.weapon,
-      playerName:  g.userData.playerName || '',
-      stance:      g.userData.stance || 'standing',
-      faceIndex:   g.userData.faceIndex ?? 0,
-      playerHeight: g.userData.playerHeight ?? HEIGHT_BASELINE,
-      playerWidth:  g.userData.playerWidth  ?? BODYFAT_NORMAL,
-      rotY:        g.rotation.y,
-      x: g.position.x, z: g.position.z,
-    })),
-    arrows:     arrowStrokes.map(s => ({ ...s })),
+  return makeStateSnapshot({
+    activeFieldId,
+    fieldWidth: activeField().width,
+    fieldLength: activeField().length,
+    placed,
+    players,
+    arrowStrokes,
     plays,
     playCount,
     activePlay,
-  };
+    heightBaseline: HEIGHT_BASELINE,
+    bodyFatNormal: BODYFAT_NORMAL,
+  });
 }
 
 function restoreState(snap) {
@@ -1574,7 +1495,7 @@ function restoreState(snap) {
     if (pg && p.faceIndex != null) pg.userData.faceIndex = p.faceIndex;
     if (pg && p.playerName) { pg.userData.playerName = p.playerName; refreshPlayerSprite(pg); }
     if (pg && p.stance && p.stance !== 'standing') setPlayerStance(pg, p.stance, true);
-    if (pg && p.rotY) pg.rotation.y = p.rotY;
+    if (pg && p.rotY != null) pg.rotation.y = p.rotY;
     if (pg) {
       pg.userData.playerHeight = p.playerHeight ?? HEIGHT_BASELINE;
       pg.userData.playerWidth  = p.playerWidth  ?? BODYFAT_NORMAL;
@@ -1603,18 +1524,18 @@ function restoreState(snap) {
 }
 
 function loadSlotMeta(i) {
-  try { const d = localStorage.getItem(SLOT_KEY(i)); return d ? JSON.parse(d).__meta : null; }
+  try { const d = localStorage.getItem(slotKey(i)); return d ? JSON.parse(d).__meta : null; }
   catch { return null; }
 }
 
 function saveSlot(i, name) {
   const snap = snapshotState();
   snap.__meta = { name };
-  localStorage.setItem(SLOT_KEY(i), JSON.stringify(snap));
+  localStorage.setItem(slotKey(i), JSON.stringify(snap));
 }
 
 function loadSlot(i) {
-  const d = localStorage.getItem(SLOT_KEY(i));
+  const d = localStorage.getItem(slotKey(i));
   pushUndo();
   if (!d) {
     [...placed, ...players].forEach(g => scene.remove(g));
@@ -1636,14 +1557,12 @@ const redoStack = [];
 const MAX_UNDO  = 50;
 
 // Scene undo/redo (bunkers + players)
-const FIELD_SAVE_KEY = id => `speedlayout_field_${id}`;
-
 function saveFieldLayout(fieldId) {
-  try { localStorage.setItem(FIELD_SAVE_KEY(fieldId), JSON.stringify(snapshotState())); } catch(e) {}
+  try { localStorage.setItem(fieldSaveKey(fieldId), JSON.stringify(snapshotState())); } catch(e) {}
 }
 
 function loadFieldLayout(fieldId) {
-  const d = localStorage.getItem(FIELD_SAVE_KEY(fieldId));
+  const d = localStorage.getItem(fieldSaveKey(fieldId));
   if (d) {
     try { restoreState(JSON.parse(d)); return; } catch(e) {}
   }
@@ -1655,7 +1574,7 @@ function autoSave() {
   if (autoSaveTimer) clearTimeout(autoSaveTimer);
   autoSaveTimer = setTimeout(() => {
     try {
-      localStorage.setItem('speedlayout_autosave_v2', JSON.stringify(snapshotState()));
+      localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(snapshotState()));
       savePlay(activePlay);
       saveFieldLayout(activeFieldId);
       showToast('Saved');
@@ -1761,7 +1680,11 @@ function attachLabel(g) {
 
 function detachLabel(g) {
   const existing = g.children.filter(c => c.userData.isLabel);
-  existing.forEach(c => g.remove(c));
+  existing.forEach(c => {
+    g.remove(c);
+    if (c.material?.map) c.material.map.dispose();
+    if (c.material) c.material.dispose();
+  });
 }
 
 function refreshLabels() {
@@ -1879,7 +1802,8 @@ function buildSidebar() {
       <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">
         ${Array.from({length: playCount}, (_, i) => {
           const s = loadPlayMeta(i);
-          return `<button class="slot-btn${s ? ' filled' : ''}${activePlay===i ? ' active' : ''}" data-play="${i}" style="flex:none;padding:4px 8px">${s ? s.name : `Play ${i+1}`}</button>`;
+          const name = s ? escapeHtml(s.name) : `Play ${i+1}`;
+          return `<button class="slot-btn${s ? ' filled' : ''}${activePlay===i ? ' active' : ''}" data-play="${i}" style="flex:none;padding:4px 8px">${name}</button>`;
         }).join('')}
       </div>
       <div class="slot-actions" style="margin-top:4px">
@@ -1916,7 +1840,7 @@ function buildSidebar() {
 
   document.getElementById('btn-reset-field').addEventListener('click', () => {
     if (!confirm(`Reset to the default layout for this field? Your custom bunker positions will be lost.`)) return;
-    localStorage.removeItem(FIELD_SAVE_KEY(activeFieldId));
+    localStorage.removeItem(fieldSaveKey(activeFieldId));
     [...placed, ...players].forEach(g => scene.remove(g));
     placed = []; players = []; deselect();
     loadDefaultLayout(activeFieldId);
@@ -1940,8 +1864,8 @@ function buildSidebar() {
           <svg width="22" height="22" viewBox="0 0 24 24">${svgIcon(b.id, b.color)}</svg>
         </div>
         <div style="flex:1;min-width:0">
-          <div class="bunker-name">${b.label}</div>
-          <div class="bunker-desc">${b.desc}</div>
+          <div class="bunker-name">${escapeHtml(b.label)}</div>
+          <div class="bunker-desc">${escapeHtml(b.desc)}</div>
         </div>
         <button class="bunker-rename-btn" data-bunker-id="${b.id}" title="Rename bunker type">✎</button>`;
 
@@ -2000,6 +1924,7 @@ function buildSidebar() {
     // Remove arrows
     arrowStrokes.forEach(s => { if (s.line) scene.remove(s.line); if (s.head) scene.remove(s.head); });
     arrowStrokes.length = 0;
+    deselect();
     autoSave();
   });
 
@@ -2033,88 +1958,7 @@ function openSidebarRenameModal(bunkerTypeId) {
 // ─────────────────────────────────────────────────────────────────────────────
 // DEFAULT FIELD LAYOUTS
 // ─────────────────────────────────────────────────────────────────────────────
-// Layout data from exported JSON — includes scale for mirrored snakes
-const DEFAULT_LAYOUTS = {
-  project_n1: [
-    { type: 'x_bunker',  x:  0,    z:  0,     rotY: 0,                        scaleX: 1, scaleZ:  1 },
-    { type: 'snake',     x:  12.5, z:  10,    rotY: 0.7853981633974481,       scaleX: 1, scaleZ:  1 },
-    { type: 'snake',     x:  12.5, z: -10,    rotY: -1.0471975511965976,      scaleX: 1, scaleZ: -1 },
-    { type: 'tombstone', x:  15,   z:  0,     rotY: 0,                        scaleX: 1, scaleZ:  1 },
-    { type: 'tombstone', x:  15,   z:  0,     rotY: 0,                        scaleX: 1, scaleZ: -1 },
-    { type: 'tombstone', x: -20,   z:  15,    rotY: 0,                        scaleX: 1, scaleZ:  1 },
-    { type: 'tombstone', x: -20,   z: -15,    rotY: 0,                        scaleX: 1, scaleZ: -1 },
-    { type: 'tombstone', x: -12.5, z:  5,     rotY: 0,                        scaleX: 1, scaleZ:  1 },
-    { type: 'tombstone', x: -12.5, z: -5,     rotY: 0,                        scaleX: 1, scaleZ: -1 },
-    { type: 'can',       x: -20,   z:  32.5,  rotY: 0,                        scaleX: 1, scaleZ:  1 },
-    { type: 'can',       x: -20,   z: -32.5,  rotY: 0,                        scaleX: 1, scaleZ: -1 },
-    { type: 'can',       x:  0,    z:  32.5,  rotY: 0,                        scaleX: 1, scaleZ:  1 },
-    { type: 'can',       x:  0,    z: -32.5,  rotY: 0,                        scaleX: 1, scaleZ: -1 },
-    { type: 'can',       x:  17.5, z:  32.5,  rotY: 0,                        scaleX: 1, scaleZ:  1 },
-    { type: 'can',       x:  17.5, z: -32.5,  rotY: 0,                        scaleX: 1, scaleZ: -1 },
-    { type: 'fatboy',    x:  0,    z:  15,    rotY: 0,                        scaleX: 1, scaleZ:  1 },
-    { type: 'fatboy',    x:  0,    z: -15,    rotY: 0,                        scaleX: 1, scaleZ: -1 },
-  ],
-
-  tac_city: [
-    // Starting walls at both spawn ends
-    { type: 'brick',     x:  0,    z: -47,    rotY: 0,                        scaleX: 1, scaleZ:  1 },
-    { type: 'brick',     x:  0,    z:  47,    rotY: 0,                        scaleX: 1, scaleZ:  1 },
-    // Same field layout as Project N1
-    { type: 'x_bunker',  x:  0,    z:  0,     rotY: 0,                        scaleX: 1, scaleZ:  1 },
-    { type: 'snake',     x:  12.5, z:  10,    rotY: 0.7853981633974481,       scaleX: 1, scaleZ:  1 },
-    { type: 'snake',     x:  12.5, z: -10,    rotY: -1.0471975511965976,      scaleX: 1, scaleZ: -1 },
-    { type: 'tombstone', x:  15,   z:  0,     rotY: 0,                        scaleX: 1, scaleZ:  1 },
-    { type: 'tombstone', x:  15,   z:  0,     rotY: 0,                        scaleX: 1, scaleZ: -1 },
-    { type: 'tombstone', x: -20,   z:  15,    rotY: 0,                        scaleX: 1, scaleZ:  1 },
-    { type: 'tombstone', x: -20,   z: -15,    rotY: 0,                        scaleX: 1, scaleZ: -1 },
-    { type: 'tombstone', x: -12.5, z:  5,     rotY: 0,                        scaleX: 1, scaleZ:  1 },
-    { type: 'tombstone', x: -12.5, z: -5,     rotY: 0,                        scaleX: 1, scaleZ: -1 },
-    { type: 'can',       x: -20,   z:  32.5,  rotY: 0,                        scaleX: 1, scaleZ:  1 },
-    { type: 'can',       x: -20,   z: -32.5,  rotY: 0,                        scaleX: 1, scaleZ: -1 },
-    { type: 'can',       x:  0,    z:  32.5,  rotY: 0,                        scaleX: 1, scaleZ:  1 },
-    { type: 'can',       x:  0,    z: -32.5,  rotY: 0,                        scaleX: 1, scaleZ: -1 },
-    { type: 'can',       x:  17.5, z:  32.5,  rotY: 0,                        scaleX: 1, scaleZ:  1 },
-    { type: 'can',       x:  17.5, z: -32.5,  rotY: 0,                        scaleX: 1, scaleZ: -1 },
-    { type: 'fatboy',    x:  0,    z:  15,    rotY: 0,                        scaleX: 1, scaleZ:  1 },
-    { type: 'fatboy',    x:  0,    z: -15,    rotY: 0,                        scaleX: 1, scaleZ: -1 },
-  ],
-
-  // NXL-style 5v5 paintball layout — 50×100 ft field
-  adrenaline: [
-    // Center — mini dorito pair facing off
-    { type: 'mini_dorito', x:  0,    z:  4,   rotY: 0 },
-    { type: 'mini_dorito', x:  0,    z: -4,   rotY: Math.PI },
-    // Home snakes — the signature low side bunkers
-    { type: 'snake',      x: -20,   z:  18,   rotY: 0 },
-    { type: 'snake',      x: -20,   z: -18,   rotY: 0 },
-    // Insert doritos — mid-field triangles
-    { type: 'dorito',     x: -8,    z:  24,   rotY: 0 },
-    { type: 'dorito',     x: -8,    z: -24,   rotY: 0 },
-    { type: 'dorito',     x:  8,    z:  24,   rotY: Math.PI },
-    { type: 'dorito',     x:  8,    z: -24,   rotY: Math.PI },
-    // TCKs — cross-field T-bunkers
-    { type: 'tck',        x:  5,    z:  10,   rotY: 0 },
-    { type: 'tck',        x:  5,    z: -10,   rotY: Math.PI },
-    // Mid cans
-    { type: 'can',        x:  18,   z:  10,   rotY: 0 },
-    { type: 'can',        x:  18,   z: -10,   rotY: 0 },
-    { type: 'fatboy',     x:  0,    z:  18,   rotY: 0 },
-    { type: 'fatboy',     x:  0,    z: -18,   rotY: 0 },
-    // Corner cans at spawn ends
-    { type: 'can',        x: -20,   z:  38,   rotY: 0 },
-    { type: 'can',        x: -20,   z: -38,   rotY: 0 },
-    { type: 'can',        x:  20,   z:  38,   rotY: 0 },
-    { type: 'can',        x:  20,   z: -38,   rotY: 0 },
-    // Sup'Air walls near spawn ends
-    { type: 'sup_air',    x: -12,   z:  42,   rotY: 0 },
-    { type: 'sup_air',    x: -12,   z: -42,   rotY: 0 },
-    { type: 'sup_air',    x:  12,   z:  42,   rotY: 0 },
-    { type: 'sup_air',    x:  12,   z: -42,   rotY: 0 },
-    // Mini snakes along side pods
-    { type: 'mini_snake', x:  20,   z:  28,   rotY: -0.785 },
-    { type: 'mini_snake', x:  20,   z: -28,   rotY:  0.785 },
-  ],
-};
+// Layout data lives in src/config.js
 
 function loadDefaultLayout(fieldId) {
   const layout = DEFAULT_LAYOUTS[fieldId];
@@ -2131,42 +1975,11 @@ function loadDefaultLayout(fieldId) {
 // Load autosave on startup (called later, after placed/players are declared)
 function loadAutosave() {
   try {
-    const d = localStorage.getItem('speedlayout_autosave_v2');
+    const d = localStorage.getItem(AUTOSAVE_KEY);
     if (d) { restoreState(JSON.parse(d)); return; }
   } catch(e) {}
   // No autosave — load default layout for the active field
   loadDefaultLayout(activeFieldId);
-}
-
-function svgIcon(id, c) {
-  switch (id) {
-    case 'snake':
-    case 'mini_snake':
-      return `<path d="M2 17 Q6 7 12 12 Q18 17 22 7" stroke="${c}" stroke-width="2.5" fill="none" stroke-linecap="round"/>`;
-    case 'dorito':
-    case 'mini_dorito':
-      return `<polygon points="12,3 22,20 2,20" fill="${c}88" stroke="${c}" stroke-width="1.5"/>`;
-    case 'can':
-      return `<ellipse cx="12" cy="7" rx="6" ry="2.5" fill="${c}"/><rect x="6" y="7" width="12" height="11" fill="${c}99"/><ellipse cx="12" cy="18" rx="6" ry="2.5" fill="${c}cc"/>`;
-    case 'fatboy':
-      return `<ellipse cx="12" cy="7" rx="9" ry="3" fill="${c}"/><rect x="3" y="7" width="18" height="10" fill="${c}99"/><ellipse cx="12" cy="17" rx="9" ry="3" fill="${c}cc"/>`;
-    case 'cake':
-      return `<ellipse cx="12" cy="9" rx="10" ry="3.5" fill="${c}"/><rect x="2" y="9" width="20" height="6" fill="${c}99"/><ellipse cx="12" cy="15" rx="10" ry="3.5" fill="${c}cc"/>`;
-    case 'brick':
-      return `<rect x="2" y="9" width="20" height="7" rx="1" fill="${c}99" stroke="${c}" stroke-width="1.2"/>`;
-    case 'tombstone':
-      return `<rect x="8" y="3" width="8" height="18" rx="2.5" fill="${c}99" stroke="${c}" stroke-width="1.2"/>`;
-    case 'sup_air':
-      return `<rect x="3" y="4" width="18" height="16" rx="2" fill="${c}99" stroke="${c}" stroke-width="1.2"/>`;
-    case 'tck':
-      return `<rect x="2" y="4" width="20" height="6" rx="1" fill="${c}99" stroke="${c}" stroke-width="1"/><rect x="9" y="10" width="6" height="10" rx="1" fill="${c}77" stroke="${c}" stroke-width="1"/>`;
-    case 'corner':
-      return `<path d="M3 20 L3 5 L9 5 L9 14 L21 14 L21 20 Z" fill="${c}88" stroke="${c}" stroke-width="1.2"/>`;
-    case 'x_bunker':
-      return `<path d="M10 2 L14 2 L14 10 L22 10 L22 14 L14 14 L14 22 L10 22 L10 14 L2 14 L2 10 L10 10 Z" fill="${c}88" stroke="${c}" stroke-width="1"/>`;
-    default:
-      return `<rect x="4" y="4" width="16" height="16" fill="${c}"/>`;
-  }
 }
 
 
@@ -2388,6 +2201,14 @@ function ndcFromClient(clientX, clientY) {
   );
 }
 function ndcFromEvent(e)   { return ndcFromClient(e.clientX, e.clientY); }
+
+function getPickMeshes(includeSprites = false) {
+  const pickMeshes = [];
+  [...placed, ...players].forEach(g => g.traverse(c => {
+    if (c.isMesh || (includeSprites && c.isSprite)) pickMeshes.push(c);
+  }));
+  return pickMeshes;
+}
 
 function worldFromClient(clientX, clientY) {
   raycaster.setFromCamera(ndcFromClient(clientX, clientY), camera);
@@ -3187,18 +3008,18 @@ function applyRename() {
   } else if (renameTarget) {
     if (renameTarget.userData.kind === 'player') {
       // Player rename — update name and refresh sprite
+      pushUndo();
       renameTarget.userData.playerName = newName;
       refreshPlayerSprite(renameTarget);
       updateSelectedInfo();
       closeRenameModal();
-      pushUndo();
     } else {
       // Per-instance bunker rename — sidebar unchanged
+      pushUndo();
       renameTarget.userData.bunker = { ...renameTarget.userData.bunker, label: newName };
       if (showLabels) attachLabel(renameTarget);
       updateSelectedInfo();
       closeRenameModal();
-      pushUndo();
     }
   } else {
     closeRenameModal();
@@ -3333,9 +3154,7 @@ canvas.addEventListener('pointerdown', e => {
 
   // Select mode: hit test
   raycaster.setFromCamera(ndcFromEvent(e), camera);
-  const pickMeshes = [];
-  [...placed, ...players].forEach(g => g.traverse(c => { if (c.isMesh) pickMeshes.push(c); }));
-  const hits = raycaster.intersectObjects(pickMeshes);
+  const hits = raycaster.intersectObjects(getPickMeshes());
 
   if (hits.length) {
     const g = hits[0].object.userData.root;
@@ -3619,9 +3438,7 @@ canvas.addEventListener('contextmenu', e => {
 
   // Hit test
   raycaster.setFromCamera(ndcFromClient(e.clientX, e.clientY), camera);
-  const pickMeshes = [];
-  [...placed, ...players].forEach(g => g.traverse(c => { if (c.isMesh) pickMeshes.push(c); }));
-  const hits = raycaster.intersectObjects(pickMeshes);
+  const hits = raycaster.intersectObjects(getPickMeshes());
   if (hits.length) {
     const g = hits[0].object.userData.root;
     if (g) {
@@ -3696,9 +3513,7 @@ canvas.addEventListener('touchend', e => {
   const ndcX = ((t.clientX - rect.left) / rect.width)  * 2 - 1;
   const ndcY = -((t.clientY - rect.top)  / rect.height) * 2 + 1;
   raycaster.setFromCamera({ x: ndcX, y: ndcY }, camera);
-  const pickMeshes = [];
-  [...placed, ...players].forEach(g => g.traverse(c => { if (c.isMesh || c.isSprite) pickMeshes.push(c); }));
-  const hits = raycaster.intersectObjects(pickMeshes);
+  const hits = raycaster.intersectObjects(getPickMeshes(true));
   const g = hits.length ? hits[0].object.userData.root : null;
   if (g && g === lastTapObj && now - lastTapTime < 400) {
     openRenameModal(g);
@@ -3717,6 +3532,7 @@ canvas.addEventListener('touchstart', e => {
   const t = e.touches[0];
   longPressPos = { x: t.clientX, y: t.clientY };
   longPressTimer = setTimeout(() => {
+    ctxRightPtrDown = { ...longPressPos };
     canvas.dispatchEvent(new MouseEvent('contextmenu', {
       bubbles: true, cancelable: true,
       clientX: longPressPos.x, clientY: longPressPos.y
@@ -4309,176 +4125,6 @@ function applyOrbitFreecam() {
 // ─────────────────────────────────────────────────────────────────────────────
 // RELEASE NOTES  — add new entries at the TOP of the RELEASES array
 // ─────────────────────────────────────────────────────────────────────────────
-
-const RELEASES = [
-  // ── ROADMAP (planned) ──────────────────────────────────────────────────────
-  {
-    version: 'Roadmap',
-    date: 'Upcoming',
-    badge: 'roadmap',
-    items: [
-      '<strong>Real bunker dimensions</strong> — replace placeholder geometry with exact measured specs from Project N1 and Tac City Airsoft',
-      '<strong>FPS mode (PC only)</strong> — first-person walkthrough is a desktop feature; requires mouse + pointer lock; not available on mobile/tablet',
-      '<strong>Share layout</strong> — generate a shareable URL or QR code so you can send a layout to your team instantly',
-      '<strong>Additional fields</strong> — want your field represented in the app? Reach out to <a href="https://www.instagram.com/bryan.paintball/" target="_blank" rel="noopener" style="color:var(--blue)">@bryan.paintball</a> on Instagram',
-    ],
-  },
-  // ── v1.0 ───────────────────────────────────────────────────────────────────
-  {
-    version: 'v1.0',
-    date: 'Apr 2026',
-    badge: 'latest',
-    items: [
-      '<strong>Unlimited play slots</strong> — no more 8-play cap; add as many plays as you need with the + button',
-      '<strong>Export Save includes everything</strong> — Export Save now saves all play slots, arrows, playbook state, and field data in one file',
-      '<strong>Adrenaline Paintball field</strong> — new field added with full NXL-style bunker palette in bright paintball colors',
-      '<strong>Player height & width</strong> — right-click any player to adjust their height (70–130%) and width (70–150%) with sliders',
-      '<strong>Carpinteros skin tones</strong> — 64% of Carpinteros players spawn with varied brown skin tones; the remaining 36% get light skin. Light-skin players do not wear a sombrero',
-      '<strong>Mobile multi-select</strong> — new Multi button in the toolbar; tap to enable, then tap objects to add/remove from the selection group for CW/CCW/Delete on touch devices',
-    ],
-  },
-  // ── v0.9 ───────────────────────────────────────────────────────────────────
-  {
-    version: 'v0.9',
-    date: 'Apr 2026',
-    badge: '',
-    items: [
-      '<strong>Playbook system</strong> — save up to 8 plays per field; each play stores players + arrows while bunkers stay fixed; click a slot to auto-save current and switch',
-      '<strong>Dynamic play slots</strong> — starts with Play 1; tap + to add more slots as needed',
-      '<strong>Arrows follow camera</strong> — arrows are stored in 3D world space and re-projected every frame, so they rotate and zoom with the camera',
-      '<strong>Player paintball masks</strong> — every player wears a JT Proflex-style mask with randomised mask color, lens, skin tone, and hair',
-      '<strong>Weapon models</strong> — distinct AR-15 rifle, M870 shotgun, and Glock pistol silhouettes based on weapon selection',
-      '<strong>Player scale</strong> — figures scaled to 5\'10" for realistic field proportion',
-      '<strong>Players face midfield</strong> — newly placed players automatically face the centre line',
-      '<strong>Hold to rotate</strong> — holding CW / CCW buttons continuously rotates the selected object on both PC and mobile',
-      '<strong>Double-tap to rename</strong> — double-tap any placed bunker or player on mobile to rename it',
-      '<strong>Per-field layout memory</strong> — each field saves its own layout independently; switching fields no longer wipes your work',
-      '<strong>Reset to field default</strong> — ↺ button next to the field dropdown restores the original layout for that field',
-      '<strong>Bunker recolor</strong> — right-click any bunker to set a custom color or reset to default; global Color / Black toggle also moved to right-click menu',
-      '<strong>Selection ring only</strong> — removed emissive orange glow on selection; cyan ring is sufficient and doesn\'t interfere with recoloring',
-      '<strong>Multi-select drag fixed</strong> — clicking a member of a multi-selection no longer collapses it; drag moves the whole group',
-      '<strong>Multi-select context menu</strong> — right-clicking a selected object preserves the group selection; Rename hidden when multiple selected',
-      '<strong>Layout slots removed</strong> — replaced by the Playbook; Export Save / Import Save for full backups',
-      '<strong>Field Settings modal</strong> — field dimensions and environment colors moved to a dedicated modal',
-      '<strong>Controls & Tips modal</strong> — moved out of sidebar into a button near the app title',
-      '<strong>No backdrop blur on modals</strong> — scene remains fully visible behind modals',
-    ],
-  },
-  // ── v0.8 ───────────────────────────────────────────────────────────────────
-  {
-    version: 'v0.8',
-    date: 'Apr 2026',
-    items: [
-      '<strong>Flip feature removed</strong> — bunkers can only be rotated, not flipped; H/V buttons and keyboard shortcuts removed',
-      '<strong>Default layouts</strong> — both Project N1 and Tac City Airsoft load a ready-made symmetrical speedsoft layout on first open or field switch',
-      '<strong>Tac City starting walls</strong> — rectangular brick bunkers placed at both short-end centres to represent the spawn/starting walls',
-    ],
-  },
-  // ── v0.7 ───────────────────────────────────────────────────────────────────
-  {
-    version: 'v0.7',
-    date: 'Apr 2026',
-    items: [
-      '<strong>Shot arrows forced straight</strong> — Shot-type arrows are always a straight line (click + drag to aim); Move arrows remain freehand',
-      '<strong>Shot arrows default neon green</strong> — switching to Shot auto-selects #39ff14; neon green swatch added to colour picker',
-      '<strong>Release notes modal</strong> — this panel; button near app title in the sidebar',
-      '<strong>App renamed</strong> — "Speedsoft Layout Planner" throughout; "SpeedQB" subtitle removed',
-      '<strong>Shadows removed</strong> — cleaner render, better performance on all devices',
-      '<strong>Bunker type rename in sidebar</strong> — ✎ button on each bunker card renames the type for future drops; placed instances unaffected',
-      '<strong>Callout feature removed</strong> — replaced by a unified per-instance rename (right-click or double-click a placed bunker)',
-      '<strong>Tracer toggle removed</strong> — T-key tracer feature removed for simplicity',
-      '<strong>Single-Escape exits FPS</strong> — pressing Escape once now reliably exits FPS mode and restores 3D view',
-      '<strong>FPS bunker collision</strong> — player can no longer walk through placed bunkers; slides along surfaces',
-      '<strong>FPS field boundary</strong> — player cannot walk outside the field perimeter',
-      '<strong>WASD freecam in 3D mode</strong> — arrow/WASD keys pan the orbit camera in layout mode',
-      '<strong>FPS renamed from Walk</strong> — button and mode now labelled "FPS"',
-      '<strong>Crosshair in FPS</strong> — white + crosshair shown at screen centre',
-      '<strong>Pointer Lock</strong> — FPS mode captures the cursor for unlimited 360° look; click canvas to re-acquire',
-      '<strong>Exit FPS → 3D view</strong> — leaving FPS snaps camera back to standard overhead 3D orbit',
-      '<strong>Player models grounded</strong> — figures now stand with feet exactly on the field surface',
-      '<strong>Realistic jump height</strong> — ~1.5 ft vertical with natural arc (~0.5 s to peak)',
-      '<strong>FPS eye height fixed</strong> — POV is at head level (~5.3 ft) matching the 6 ft player model',
-      '<strong>Rotation precision</strong> — bunker rotate buttons now step 15° per click (was 45°)',
-      '<strong>Long-press context menu</strong> — 500 ms long-press on mobile opens right-click menu',
-      '<strong>Visit counter removed</strong>',
-    ],
-  },
-  // ── v0.6 ───────────────────────────────────────────────────────────────────
-  {
-    version: 'v0.6',
-    date: 'Apr 2026',
-    items: [
-      '<strong>FPS / Walk mode</strong> — press F or the FPS button to enter first-person view; WASD to move, mouse to look',
-      '<strong>FPS physics</strong> — Crouch (C), Crawl (Z), Jump (Space), Sprint (Shift), Dive (Shift+Z), Slide (Shift+C)',
-      '<strong>BB shooting simulator</strong> — left-click in FPS fires a .25g BB at ~313 ft/s with hop-up straight flight then drop',
-      '<strong>Impact flash</strong> — white flash sphere on BB hit',
-      '<strong>Arrow types</strong> — Move (solid, freehand) and Shot (dashed) arrow styles',
-      '<strong>Multi-select</strong> — Shift+click to add to selection; box-select by dragging on empty canvas; transforms affect all selected',
-      '<strong>Right-click context menu</strong> — Rename, Duplicate, Delete on any bunker or player',
-      '<strong>Auto-save</strong> — layout saved to localStorage on every change; restored on page reload',
-      '<strong>Per-instance callouts</strong> — each placed bunker could store red/blue team callout names (later replaced by unified rename)',
-      '<strong>Field distance rulers</strong> — Units ON/OFF toggle draws distance markers on the field',
-    ],
-  },
-  // ── v0.5 ───────────────────────────────────────────────────────────────────
-  {
-    version: 'v0.5',
-    date: 'Apr 2026',
-    items: [
-      '<strong>Layout slots</strong> — 4 save/load slots with custom names; Export / Import JSON',
-      '<strong>Undo / Redo</strong> — separate stacks for scene changes and arrow strokes; Ctrl+Z / Ctrl+Y',
-      '<strong>Duplicate</strong> — Ctrl+D duplicates selected bunker',
-      '<strong>Bunker labels</strong> — Labels toggle shows name tag above each placed bunker',
-      '<strong>Screenshot</strong> — downloads a PNG of the current layout',
-      '<strong>Sidebar collapse</strong> — panel can be hidden to give more canvas space; reopens with arrow button',
-    ],
-  },
-  // ── v0.4 ───────────────────────────────────────────────────────────────────
-  {
-    version: 'v0.4',
-    date: 'Apr 2026',
-    items: [
-      '<strong>Player markers</strong> — human figure models with team colour (red/blue) and weapon badge; draggable',
-      '<strong>Draw arrows</strong> — freehand arrows with colour and thickness picker; separate canvas overlay',
-      '<strong>Mirror mode</strong> — symmetrical bunker placement across the field centre line',
-      '<strong>Snap to grid</strong> — 2.5 ft grid snap toggle',
-      '<strong>Flip H / Flip V</strong> — mirror a selected bunker horizontally or vertically',
-    ],
-  },
-  // ── v0.3 ───────────────────────────────────────────────────────────────────
-  {
-    version: 'v0.3',
-    date: 'Apr 2026',
-    items: [
-      '<strong>Field selector</strong> — Project N1 and Tac City Airsoft presets with editable width/length',
-      '<strong>Mobile support</strong> — sidebar becomes a bottom sheet; bunkers scroll horizontally; touch drag-and-drop',
-      '<strong>Apple-style UI</strong> — SF Pro font stack, dark glass sidebar, pill buttons, smooth transitions',
-    ],
-  },
-  // ── v0.2 ───────────────────────────────────────────────────────────────────
-  {
-    version: 'v0.2',
-    date: 'Apr 2026',
-    items: [
-      '<strong>Bunker library</strong> — Can, Fatboy, Cake, Dorito, Mini Dorito, Brick, Tombstone, Sup\'Air, Snake, Mini Snake, TCK, Corner, X-Bunker',
-      '<strong>Drag-and-drop placement</strong> — drag from sidebar onto field; click to arm then click-to-place',
-      '<strong>Rotate CW / CCW</strong> — R / E keys or toolbar buttons',
-      '<strong>Delete</strong> — Del key or toolbar button',
-      '<strong>Top view / 3D view</strong> — toolbar camera presets',
-      '<strong>Clear All</strong> — removes all placed bunkers',
-    ],
-  },
-  // ── v0.1 ───────────────────────────────────────────────────────────────────
-  {
-    version: 'v0.1',
-    date: 'Apr 2026',
-    items: [
-      '<strong>Initial build</strong> — Three.js scene with field plane, grid, ambient + directional lighting',
-      '<strong>OrbitControls</strong> — right-click orbit, middle-click pan, scroll zoom; floor clamp',
-      '<strong>Basic bunker shapes</strong> — placeholder geometry for common speedsoft bunkers',
-    ],
-  },
-];
 
 function buildRelNotes() {
   const body = document.getElementById('relnotes-body');
