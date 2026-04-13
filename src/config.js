@@ -1,4 +1,4 @@
-export const LAST_UPDATED = 'Apr 12, 2026 · 11:11 PM';
+export const LAST_UPDATED = 'Apr 12, 2026 · 11:18 PM';
 
 export const FIELD_DEFS = {
   project_n1: {
@@ -146,6 +146,7 @@ export const RELEASES = [
     badge: 'latest',
     items: [
       '<strong>Arrow controls update</strong> — in Arrow mode, left-drag draws arrows and right-drag rotates camera, including Shot (dotted) arrows',
+      '<strong>Player loadout panel redesign</strong> — Team and Weapon selectors now use a vertical side rail layout to match the Arrow toolbar style, with full text labels on all buttons',
       '<strong>State restore + undo fixes</strong> — fixed player rotation restore for 0° facing and corrected rename undo order so Ctrl+Z returns to the prior name state',
       '<strong>Playbook clear cleanup</strong> — clearing a play now also clears stale selection state to avoid follow-up action glitches',
       '<strong>Input and memory stability</strong> — improved mobile long-press context behavior and disposed label sprite textures/materials to prevent GPU leaks over time',

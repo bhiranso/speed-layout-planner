@@ -242,27 +242,28 @@ body {
 
 /* ── Player panel ── */
 #player-panel {
-  position: absolute; top: 96px; right: 14px;
+  position: fixed; right: 10px; top: 50%; transform: translateY(-50%);
   display: none; flex-direction: column; gap: 8px; z-index: 20;
   background: var(--glass); border: 1px solid rgba(255,255,255,0.1);
-  border-radius: var(--radius-md); padding: 12px;
+  border-radius: 12px; padding: 7px 6px;
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
   box-shadow: 0 4px 24px rgba(0,0,0,0.5);
-  min-width: 160px;
+  min-width: 138px;
 }
 .pp-label {
   font-size: 10px; font-weight: 600; color: var(--text3);
   text-transform: uppercase; letter-spacing: 0.08em;
+  padding: 0 2px;
 }
-.pp-row { display: flex; gap: 5px; flex-wrap: wrap; }
+.pp-row { display: flex; flex-direction: column; gap: 4px; }
 .team-btn, .weapon-btn {
-  padding: 5px 11px; background: var(--bg2);
+  width: 100%; padding: 6px 8px; background: var(--bg2);
   border: 1px solid rgba(255,255,255,0.08);
-  border-radius: var(--radius-pill);
+  border-radius: 6px;
   color: var(--text2); font-family: var(--font);
   font-size: 12px; font-weight: 500;
-  cursor: pointer; transition: all 0.12s; white-space: nowrap;
+  cursor: pointer; transition: all 0.12s; white-space: nowrap; text-align: left;
 }
 .team-btn:hover, .weapon-btn:hover { background: var(--bg3); color: var(--text); }
 .team-btn[data-team="red"].on  { background: rgba(255,59,48,0.2);  border-color: #ff3b30; color: #ff3b30; }
@@ -842,7 +843,7 @@ body.sidebar-open #sidebar-toggle { display: none; }
   <!-- Player mode panel -->
   <div id="player-panel">
     <div class="pp-label">Team</div>
-    <div class="pp-row" style="flex-wrap:wrap;gap:4px">
+    <div class="pp-row">
       <button class="team-btn on" data-team="red"         style="color:#ff3b30">Red</button>
       <button class="team-btn"    data-team="blue"        style="color:#0a84ff">Blue</button>
       <button class="team-btn"    data-team="murder_inc"  style="color:#c9a227">Murder Inc</button>
